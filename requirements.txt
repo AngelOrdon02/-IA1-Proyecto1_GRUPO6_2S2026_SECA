@@ -1,0 +1,14 @@
+# --- Aplicacion ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+jinja2==3.1.5
+python-multipart==0.0.20
+
+# --- Puente con SWI-Prolog ---
+# Backend principal del motor de inferencia. Si la biblioteca nativa no carga,
+# app/prolog/engine.py cae automaticamente al backend de subproceso.
+pyswip==0.3.2
+
+# --- Pruebas ---
+pytest==8.3.4
+httpx==0.28.1

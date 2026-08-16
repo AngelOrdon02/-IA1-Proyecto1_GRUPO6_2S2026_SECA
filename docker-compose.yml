@@ -1,0 +1,31 @@
+# =============================================================================
+# Logic Detective — orquestacion local y de despliegue
+# =============================================================================
+services:
+  logic-detective:
+    build: .
+    image: logic-detective:1.0.0
+    container_name: logic-detective
+    ports:
+      - "8000:8000"
+    environment:
+      # "auto" intenta PySwip y cae al backend de subproceso si libswipl.so no
+      # carga. Para forzar uno u otro: pyswip | subprocess
+      LD_PROLOG_BACKEND: auto
+      LD_DB: /app/datos/logic_detective.db
+      # Cambiar en despliegue real.
+      LD_ADMIN_USER: ${LD_ADMIN_USER:-admin}
+      LD_ADMIN_PASS: ${LD_ADMIN_PASS:-detective2026}
+    volumes:
+      # Persiste sesiones y bitacoras entre reinicios del contenedor.
+      - datos-logic-detective:/app/datos
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/salud').read()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  datos-logic-detective:

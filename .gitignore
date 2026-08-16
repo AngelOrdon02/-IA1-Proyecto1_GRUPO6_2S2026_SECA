@@ -1,0 +1,20 @@
+# Carpeta de trabajo del coordinador (planes, notas internas)
+pruebas/
+
+# Entorno virtual de Python
+.venv/
+venv/
+
+# Artefactos de Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+
+# Datos en tiempo de ejecucion: sesiones, bitacoras y respaldos
+datos/
+
+# Editores y sistema operativo
+.vscode/
+.idea/
+.DS_Store

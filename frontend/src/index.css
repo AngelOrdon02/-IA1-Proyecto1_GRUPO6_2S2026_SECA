@@ -1,0 +1,251 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Sistema de diseno — Logic Detective
+   Paleta noir/laton sobre fondo oscuro. Todos los colores de texto verificados
+   contra AA (4.5:1) sobre --color-bg y sobre --color-surface-2, que son los dos
+   fondos donde llegan a apoyarse.
+   --------------------------------------------------------------------------- */
+
+@theme {
+  /* Superficies -------------------------------------------------------- */
+  /* Negro azulado profundo: base sobre la que componen las auroras.
+     Mas oscuro que el #0a0c11 original, asi que el contraste del texto
+     (verificado contra el valor anterior) solo mejora. */
+  --color-bg: #070a0f;
+  --color-bg-soft: #0b0e15;
+  --color-surface: #141822;
+  --color-surface-2: #1a1f2b;
+  --color-surface-3: #222835;
+  --color-surface-hover: #1d2330;
+  --color-surface-active: #262d3c;
+  /* Paneles con desenfoque: opacos lo suficiente para no heredar el aura */
+  --color-glass: rgba(13, 16, 23, 0.82);
+
+  /* Lineas ------------------------------------------------------------- */
+  --color-border: #242b38;
+  --color-border-strong: #3a4356;
+
+  /* Texto -------------------------------------------------------------- */
+  --color-text: #eef1f6; /* 17.3:1 sobre bg */
+  --color-text-muted: #a9b3c4; /*  9.2:1 sobre bg */
+  --color-text-dim: #818ea3; /*  5.9:1 sobre bg — minimo legible */
+
+  /* Acentos plenos: iconos, bordes, barras, fondos de boton ------------- */
+  --color-accent: #f0b429; /* laton — marca y accion primaria */
+  --color-accent-ink: #12100b; /* texto sobre relleno de acento */
+  --color-info: #5eb0ef;
+  --color-success: #3fb950;
+  --color-warning: #e3a008;
+  --color-danger: #f26d6d;
+
+  /* Acentos claros: texto sobre fondos teñidos (bg-<color>/12) ---------- */
+  --color-accent-soft: #ffd479;
+  --color-info-soft: #9bcdf7;
+  --color-success-soft: #7ee094;
+  --color-warning-soft: #f5c451;
+  --color-danger-soft: #ff9b9b;
+
+  /* Alias heredados del tema anterior */
+  --color-accent-mint: #3fb950;
+  --color-accent-gold: #e3a008;
+
+  /* Aurora -------------------------------------------------------------
+     Colores de las cortinas de luz del fondo. Ninguna parada llega a
+     blanco puro: ese fue el error que lavaba el texto en la primera
+     version con blend modes. */
+  --color-aurora-teal: #49cf9e;
+  --color-aurora-cyan: #00e5ff;
+  --color-aurora-violet: #593e97;
+
+  /* Sombras con luz ------------------------------------------------------
+     Las cards combinan una hairline superior luminosa (inset) con una
+     sombra profunda: la luz viene de arriba, como en el fondo. */
+  --shadow-card:
+    0 1px 0 0 rgba(255, 255, 255, 0.045) inset, 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-card-hover:
+    0 1px 0 0 rgba(255, 255, 255, 0.08) inset,
+    0 16px 40px -12px rgba(0, 0, 0, 0.65);
+
+  /* Tipografia --------------------------------------------------------- */
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", "Cascadia Code", Consolas,
+    "Liberation Mono", monospace;
+  /* Serif editorial para titulares: el caracter "expediente de novela
+     negra". Cae a las serif del sistema si Google Fonts no carga. */
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+
+  /* Animacion ---------------------------------------------------------- */
+
+  /* 12px era demasiado pequeño para los metadatos: la escala arranca en 13 */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.45;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.55;
+  --text-base: 1rem;
+  --text-base--line-height: 1.65;
+
+  /* Animacion ---------------------------------------------------------- */
+  --animate-fade-up: fade-up 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade-in: fade-in 0.2s ease-out both;
+  --animate-scale-in: scale-in 0.16s cubic-bezier(0.22, 1, 0.36, 1) both;
+  /* Deriva lenta de las auroras. La regla global de prefers-reduced-motion
+     las reduce a un fotograma estatico. */
+  --animate-aurora-a: aurora-drift-a 48s ease-in-out infinite;
+  --animate-aurora-b: aurora-drift-b 64s ease-in-out infinite;
+  --animate-aurora-c: aurora-drift-c 56s ease-in-out infinite;
+}
+
+/* Cada cortina se desplaza en una direccion distinta para que el cruce
+   nunca se repita igual; el desplazamiento es pequeno a proposito. */
+@keyframes aurora-drift-a {
+  0%,
+  100% {
+    transform: translate3d(-2%, -1%, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(2.5%, 2%, 0) scale(1.05);
+  }
+}
+
+@keyframes aurora-drift-b {
+  0%,
+  100% {
+    transform: translate3d(2%, 1%, 0) scale(1.03);
+  }
+  50% {
+    transform: translate3d(-2.5%, -2%, 0) scale(1);
+  }
+}
+
+@keyframes aurora-drift-c {
+  0%,
+  100% {
+    transform: translate3d(0%, 1.5%, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-1.5%, -2.5%, 0) scale(1.06);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scrollbar-color: #2f3746 transparent;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  /* Los titulos heredaban line-height 1.6 y quedaban desarmados */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
+    line-height: 1.2;
+    letter-spacing: -0.012em;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  /* Foco visible en todo control: antes no habia ninguno */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-accent) 32%, transparent);
+    color: var(--color-text);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #2f3746;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #414b5e;
+    background-clip: padding-box;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

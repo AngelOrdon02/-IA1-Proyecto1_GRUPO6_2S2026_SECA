@@ -77,6 +77,16 @@ async def crear_sesion(datos: NuevaSesion):
     return {"ok": True, "sesion": sesion}
 
 
+@router.get("/sesiones")
+async def listar_sesiones(limite: int = 50):
+    """Historial de investigaciones, el mas reciente primero.
+
+    La barra lateral lo usa para reanudar una investigacion o abrir el informe
+    de una ya cerrada.
+    """
+    return {"ok": True, "sesiones": db.listar_sesiones(limite=limite)}
+
+
 @router.get("/sesiones/{sesion}")
 async def ver_sesion(sesion: str):
     return {"ok": True, "sesion": db.obtener_sesion(sesion)}

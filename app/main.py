@@ -15,16 +15,15 @@ from __future__ import annotations
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import config
 from app.prolog.engine import ErrorProlog, obtener_engine
-from app.routers import admin, api, web
+from app.routers import api, api_admin
 from app.services.investigacion import AccionInvalida
 from app.storage import db
-from app.templates_env import plantillas
 
 logging.basicConfig(
     level=logging.INFO,
@@ -66,11 +65,8 @@ app = FastAPI(
     lifespan=ciclo_de_vida,
 )
 
-app.mount("/static", StaticFiles(directory=config.RAIZ / "app" / "static"), name="static")
-
-app.include_router(web.router)
 app.include_router(api.router)
-app.include_router(admin.router)
+app.include_router(api_admin.router)
 
 
 # ---------------------------------------------------------------------------
@@ -79,29 +75,14 @@ app.include_router(admin.router)
 
 @app.exception_handler(AccionInvalida)
 async def error_accion(request: Request, exc: AccionInvalida):
-    """Accion imposible en el estado actual: es culpa del usuario, no del sistema."""
-    if request.url.path.startswith("/api"):
-        return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
-    return plantillas.TemplateResponse(
-        request, "error.html",
-        {"titulo": "Accion no permitida", "mensaje": str(exc)},
-        status_code=400,
-    )
+    return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
 
 
 @app.exception_handler(ErrorProlog)
 async def error_prolog(request: Request, exc: ErrorProlog):
-    """Falla del motor de inferencia. Se registra completa y se resume al usuario."""
     log.error("Error del motor Prolog: %s", exc)
-    if request.url.path.startswith("/api"):
-        return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
-    return plantillas.TemplateResponse(
-        request, "error.html",
-        {
-            "titulo": "Error del motor de inferencia",
-            "mensaje": "La consulta no pudo resolverse. Revisa el log del servidor.",
-            "detalle": str(exc),
-        },
+    return JSONResponse(
+        {"ok": False, "error": "Error del motor de inferencia"},
         status_code=500,
     )
 
@@ -112,3 +93,53 @@ async def salud():
     engine = obtener_engine()
     total = len(engine.valores("caso(Id, _, _, _)", "Id"))
     return HTMLResponse(f"ok backend={engine.nombre} casos={total}")
+
+
+# ---------------------------------------------------------------------------
+# SPA: servir el frontend React
+# ---------------------------------------------------------------------------
+
+# En el contenedor lo deja aqui el Dockerfile (COPY --from=frontend-builder).
+# En desarrollo local aparece al correr `pnpm build` dentro de frontend/. Si no
+# existe, la aplicacion sigue sirviendo la API: solo se pierde la interfaz.
+FRONTEND_DIST = config.RAIZ / "frontend" / "dist"
+FRONTEND_INDEX = FRONTEND_DIST / "index.html"
+FRONTEND_ASSETS = FRONTEND_DIST / "assets"
+
+if FRONTEND_ASSETS.is_dir():
+    # Los bundles con hash en el nombre los sirve StaticFiles, que ya resuelve
+    # el content-type y el cacheado.
+    app.mount(
+        "/assets",
+        StaticFiles(directory=FRONTEND_ASSETS),
+        name="frontend-assets",
+    )
+else:
+    log.warning(
+        "No se encontro %s. La API funciona, pero no hay interfaz que servir: "
+        "ejecutar `pnpm build` en frontend/ o construir la imagen Docker.",
+        FRONTEND_ASSETS,
+    )
+
+
+if FRONTEND_INDEX.is_file():
+
+    @app.get("/{ruta_spa:path}", include_in_schema=False)
+    async def spa_fallback(ruta_spa: str):
+        """Sirve el frontend: el archivo pedido si existe, index.html si no.
+
+        Esta ruta es un comodin y se registra la ultima, asi que solo ve lo que
+        ningun router reclamo antes. Aun asi se excluye /api de forma explicita:
+        un endpoint mal escrito debe devolver 404, no la pagina de la SPA.
+        """
+        if ruta_spa == "api" or ruta_spa.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Endpoint no encontrado")
+
+        # El destino se resuelve y se comprueba que siga dentro de dist: sin
+        # esto, una ruta con ../ serviria cualquier archivo del contenedor.
+        destino = (FRONTEND_DIST / ruta_spa).resolve()
+        raiz = FRONTEND_DIST.resolve()
+        if destino.is_file() and destino.is_relative_to(raiz):
+            return FileResponse(destino)
+
+        return FileResponse(FRONTEND_INDEX)

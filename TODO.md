@@ -15,13 +15,46 @@
 | Rubro de la rúbrica | Pts | Estado real |
 |---|---|---|
 | 2.1 Motor de Inferencia en Prolog | 20 | ✅ **Completo** — 3 casos válidos, 16 predicados, constructos comprobados |
-| 2.2 Desarrollo e Integración en Python | 20 | ✅ **Completo** — 86 pruebas pasando, web + API + admin |
-| 2.3 Contenedorización y Despliegue | 20 | 🟡 **A medias** — Docker listo, **sin desplegar en la nube** |
-| 1.2 Gestión de Repositorio y CI/CD | 30 | 🔴 **En riesgo** — **no existe pipeline**, `main` vacío, commits de una sola persona |
+| 2.2 Desarrollo e Integración en Python | 20 | 🟡 **Funciona** — API + admin OK; **4 pruebas rotas** tras migrar a React |
+| 2.3 Contenedorización y Despliegue | 20 | 🟡 **Imagen verificada 16/08**, falta desplegar en la nube |
+| 1.2 Gestión de Repositorio y CI/CD | 30 | 🔴 **En riesgo** — pipeline **pospuesto por decisión del equipo**, `main` vacío, commits de una sola persona |
 | 1.1 Documentación | 10 | 🟡 **A medias** — 5 docs escritos, faltan capturas y diagrama de flujo |
 
 **Los 30 puntos de repositorio/CI son hoy el mayor riesgo del proyecto**, no el
 motor de inferencia.
+
+---
+
+## 0.bis Contenerización — resuelta el 16/08
+
+La app migró de plantillas Jinja a un **frontend React (Vite + TypeScript)**
+servido por FastAPI como SPA. Eso rompió el build; lo corregido fue:
+
+- [x] **`main.py`: faltaba `from fastapi.staticfiles import StaticFiles`** — el
+      contenedor moría al importar.
+- [x] **`.dockerignore` creado.** Era el fallo de fondo: sin él, `COPY frontend/ ./`
+      copiaba el `node_modules` del host encima del instalado en la imagen, y
+      como pnpm usa enlaces simbólicos a su almacén, llegaban rotos.
+- [x] **Stage de Node reescrito.** Se quitó el `|| true` que ocultaba el error
+      real del `pnpm install`, se fijó `pnpm@11.9.0` en vez de `corepack` sin
+      versión, y se copian `.npmrc` y `pnpm-workspace.yaml` **antes** del
+      install: son los que autorizan el script de instalación de esbuild
+      (pnpm 10+ lo bloquea por defecto), sin los cuales `vite build` falla.
+- [x] **Fallback de la SPA endurecido**: sirve archivos reales con `FileResponse`
+      (antes devolvía todo como HTML, rompiendo el content-type), devuelve 404
+      en `/api/*` inexistente en vez de la página, y comprueba que la ruta
+      resuelta siga dentro de `dist/` para que un `../` no sirva archivos del
+      contenedor.
+
+**Verificado end-to-end** con la imagen ya construida: contenedor `healthy`,
+backend **pyswip** (no el fallback de subproceso), los 3 casos cargados, la SPA
+sirviéndose, `/api/admin` pidiendo autenticación, y una partida completa
+`caso1 → acusar a marco → veredicto correcto (136 pts)`.
+
+- [ ] **Pendiente: 4 pruebas rotas.** `test_30`, `test_43`, `test_46` y `test_47`
+      siguen apuntando a las rutas Jinja eliminadas (`/`, `/investigacion/{s}/informe`,
+      `/admin`), que ahora las atiende el comodín de la SPA y devuelven 200.
+      Hay que reescribirlas contra la API JSON. **82 de 86 pasan.**
 
 ---
 
@@ -38,19 +71,25 @@ motor de inferencia.
   `explicacion`, `explicacion_conclusion`).
 - ✅ Constructos obligatorios presentes: cortes (9 usos), negación `\+` (24),
   `findall`/listas (33), recursividad, unificación.
-- ✅ **86 pruebas pasando** (`pytest tests/ -q`), el SMART pedía ≥10.
-- ✅ Las 14 secciones del módulo de investigación funcionan, con bitácora por acción.
+- ✅ **82 de 86 pruebas pasando** (`pytest tests/ -q`); el SMART pedía ≥10. Las 4
+  rotas son de la interfaz vieja, ver sección 0.bis.
+- ✅ El módulo de investigación funciona completo, con bitácora por acción.
 - ✅ Módulo administrativo con edición de la KB, validación sintáctica, exportar,
   eliminar con respaldo e historial de sesiones.
-- ✅ `Dockerfile` y `docker-compose.yml` correctos (SWI-Prolog + Python, un worker,
-  healthcheck, usuario sin privilegios, volumen persistente).
+- ✅ `Dockerfile` multi-stage (Node para el frontend, Python + SWI-Prolog para el
+  backend) y `docker-compose.yml`: un worker, healthcheck, usuario sin
+  privilegios y volumen persistente. **Build y arranque comprobados el 16/08.**
 - ✅ Puente PySwip con fallback a subproceso.
 
 ---
 
 ## 2. OBLIGATORIO pendiente (bloquea puntos)
 
-### 2.1 CI/CD — GitHub Actions · 🔴 CRÍTICO
+### 2.1 CI/CD — GitHub Actions · 🔴 CRÍTICO · ⏸️ pospuesto a propósito
+> Decisión del equipo (16/08): primero dejar la contenerización funcionando.
+> Retomar en cuanto el build esté estable — son 30 puntos de la rúbrica y el
+> pipeline necesita margen para ponerse en verde antes del 28/08.
+
 - [ ] **Crear `.github/workflows/ci.yml`. Hoy no existe en ninguna rama.**
       El `README.md` y el plan de trabajo lo dan por hecho ("CI/CD Configurado ✅"),
       pero `git log --all -- .github` no devuelve nada.
@@ -199,7 +238,7 @@ integrantes distintos. Dejar **(9)** para el final, o no hacerlo.
 # 1. La KB carga y los tres casos cumplen los mínimos
 swipl -q -g "forall(member(C,[caso1,caso2,caso3]), (conteo_caso(C,X), cumple_minimos(C), format('~w ~w ok~n',[C,X])))" -t halt prolog/logic_detective.pl
 
-# 2. Las 86 pruebas pasan
+# 2. Las pruebas pasan (hay 4 pendientes de migrar a la API, ver 0.bis)
 python -m pytest tests/ -q
 
 # 3. La imagen construye y arranca
@@ -288,7 +327,7 @@ git check-ignore -v .env datos/logic_detective.db      # deben salir ignorados
 git diff --cached -U0 | grep -inE "password|passwd|secret|api[_-]?key|token" 
 
 # 3. Que las pruebas pasen
-python -m pytest tests/ -q                              # 86 passed
+python -m pytest tests/ -q                              # hoy: 82 passed, 4 failed
 
 # 4. Que la base de conocimiento cargue
 swipl -q -g "consult('prolog/logic_detective.pl'), halt"

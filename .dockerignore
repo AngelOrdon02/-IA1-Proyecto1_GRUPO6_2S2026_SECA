@@ -1,0 +1,57 @@
+# =============================================================================
+# Lo que NO entra en el contexto de build de Docker
+# -----------------------------------------------------------------------------
+# Sin este archivo, `COPY frontend/ ./` copiaria el node_modules del host ENCIMA
+# del que se instalo en la imagen. pnpm usa enlaces simbolicos a su almacen, asi
+# que esos enlaces llegarian rotos y `pnpm build` fallaria. Es la causa mas
+# comun de un build que funciona en local y revienta en Docker.
+# =============================================================================
+
+# --- Dependencias y compilados del frontend ---------------------------------
+frontend/node_modules
+frontend/dist
+node_modules
+
+# --- Python ------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# --- Git y CI ----------------------------------------------------------------
+.git
+.gitignore
+.github
+
+# --- Secretos ----------------------------------------------------------------
+# Las variables llegan por el `environment:` de docker-compose, no horneadas
+# en la imagen.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credenciales*.json
+service-account*.json
+
+# --- Datos de ejecucion ------------------------------------------------------
+# La base de datos vive en un volumen, no en la imagen.
+datos/
+!datos/.gitkeep
+
+# --- Documentacion y notas ---------------------------------------------------
+docs/
+pruebas/
+*.md
+!README.md
+
+# --- Editores y sistema operativo --------------------------------------------
+.vscode/
+.idea/
+.DS_Store
+*.log

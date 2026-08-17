@@ -31,13 +31,20 @@ Abrir <http://localhost:8000>.
 
 ### Sin Docker
 
-Requiere SWI-Prolog instalado (`sudo apt install swi-prolog-nox`).
+Requiere SWI-Prolog (`sudo apt install swi-prolog-nox`) y Node 22 con pnpm.
 
 ```bash
+# Frontend: sin este paso la API responde, pero no hay interfaz que servir
+cd frontend && pnpm install && pnpm build && cd ..
+
+# Backend
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 .venv/bin/uvicorn app.main:app --reload --workers 1
 ```
+
+Para desarrollar el frontend con recarga en caliente, `pnpm dev` en `frontend/`
+levanta Vite en el puerto 5173 con proxy de `/api` hacia el backend.
 
 > **Un solo worker, siempre.** PySwip embebe un único intérprete de SWI-Prolog
 > por proceso y no es seguro entre hilos.
@@ -60,6 +67,9 @@ swipl prolog/logic_detective.pl
 
 86 pruebas: motor de inferencia, integración Python-Prolog, descubrimiento
 progresivo, bitácora, resolución y seguridad.
+
+> Hoy pasan 82. Las 4 restantes apuntan a las plantillas Jinja que sustituyó el
+> frontend React y hay que reescribirlas contra la API. Ver [TODO.md](TODO.md).
 
 ## Los tres casos
 
@@ -115,10 +125,10 @@ python3 -c "import secrets; print(secrets.token_urlsafe(24))"   # clave admin
 
 ```
 prolog/          Motor de inferencia y bases de conocimiento
-app/             Backend FastAPI, servicios e interfaz
-tests/           Suite de 86 pruebas
+app/             Backend FastAPI: API JSON, servicios y puente con Prolog
+frontend/        Interfaz React (Vite + TypeScript), servida como SPA
+tests/           Suite de pruebas
 docs/            Documentación técnica
-.github/         Pipeline de CI
 ```
 
 ## Estado

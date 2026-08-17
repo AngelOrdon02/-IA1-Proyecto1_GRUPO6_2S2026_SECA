@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block titulo %}Informe final — {{ ficha.Titulo }}{% endblock %}
+
+{% block contenido %}
+<article class="informe">
+
+  <header class="informe-cabecera">
+    <p class="tenue">Informe final de investigacion</p>
+    <h1>{{ ficha.Titulo }}</h1>
+    <p>{{ ficha.Hecho }} &middot; {{ ficha.LugarNombre }} &middot; {{ ficha.HoraTexto }}</p>
+  </header>
+
+  {% set correcto = sesion.veredicto == "correcto" %}
+  <section class="veredicto {{ 'veredicto-ok' if correcto else 'veredicto-fallo' }}">
+    <h2>{{ "Acusacion correcta" if correcto else "Acusacion incorrecta" }}</h2>
+    <p>
+      Acusaste a <strong>{{ sesion.acusado }}</strong>.
+      {% if conclusion and conclusion.Estado == "resuelto" %}
+        El motor de inferencia concluye que el responsable logico es
+        <strong>{{ conclusion.NombreResponsable }}</strong>,
+        con un nivel de sospecha de {{ conclusion.Puntaje }} puntos.
+      {% else %}
+        El motor no pudo determinar un responsable unico con la informacion registrada.
+      {% endif %}
+    </p>
+  </section>
+
+  <section>
+    <h2>Nivel de sospecha</h2>
+    <table class="tabla">
+      <thead><tr><th>Sospechoso</th><th>Puntaje</th><th>Nivel</th></tr></thead>
+      <tbody>
+        {% for s in ranking %}
+        <tr>
+          <td><strong>{{ s.Nombre }}</strong></td>
+          <td class="mono">{{ s.Puntaje }}</td>
+          <td><span class="etiqueta etiqueta-{{ s.Categoria }}">{{ s.Categoria | etiqueta_categoria }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Cadena deductiva</h2>
+    <p class="tenue">Reglas que el motor activo para sostener la conclusion.</p>
+    <table class="tabla">
+      <thead><tr><th>Regla</th><th>Nombre</th><th>Que establece</th><th>Dato</th></tr></thead>
+      <tbody>
+        {% for r in reglas %}
+        <tr>
+          <td class="mono">{{ r.Id }}</td>
+          <td><strong>{{ r.Nombre }}</strong></td>
+          <td class="tenue">{{ r.Descripcion }}</td>
+          <td class="mono tenue">{{ r.Detalle }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Coartadas</h2>
+    <table class="tabla">
+      <thead><tr><th>Sospechoso</th><th>Estado</th><th>Razonamiento</th></tr></thead>
+      <tbody>
+        {% for c in coartadas %}
+        <tr>
+          <td><strong>{{ c.Nombre }}</strong></td>
+          <td class="{{ 'no' if c.Estado == 'valida' else 'si' }}">{{ c.Estado }}</td>
+          <td class="tenue">{{ c.Motivo }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Contradicciones del caso</h2>
+    <ul class="lista">
+      {% for c in contradicciones %}
+      <li><span class="mono tenue">{{ c.A }} &harr; {{ c.B }}</span><p>{{ c.Texto }}</p></li>
+      {% else %}
+      <li class="tenue">No se detectaron contradicciones.</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  {% if complices %}
+  <section>
+    <h2>Posibles complices</h2>
+    <ul class="lista">
+      {% for c in complices %}
+      <li><strong>{{ c.Nombre }}</strong><p>{{ c.Texto }}</p></li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <section>
+    <h2>Sospechosos descartados</h2>
+    <ul class="lista">
+      {% for d in descartes %}
+      <li><strong>{{ d.Nombre }}</strong><p>{{ d.Texto }}</p></li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section>
+    <h2>Bitacora de la investigacion</h2>
+    <table class="tabla">
+      <thead><tr><th>Momento</th><th>Accion</th><th>Detalle</th></tr></thead>
+      <tbody>
+        {% for b in bitacora %}
+        <tr>
+          <td class="mono tenue">{{ b.momento }}</td>
+          <td><span class="pastilla">{{ b.accion }}</span></td>
+          <td>{{ b.detalle }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <div class="acciones">
+    <a href="/" class="boton">Volver al inicio</a>
+    <a href="/api/sesiones/{{ sesion_id }}/informe" class="boton boton-suave">Ver informe en JSON</a>
+  </div>
+</article>
+{% endblock %}

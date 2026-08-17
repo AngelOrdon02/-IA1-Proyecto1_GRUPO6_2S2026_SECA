@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+{% block titulo %}{{ ficha.Titulo }} — Investigacion{% endblock %}
+
+{% block nav %}
+  <form method="post" action="/investigacion/{{ sesion_id }}/pista" class="en-linea">
+    <button type="submit" class="boton boton-suave">Solicitar pista ({{ sesion.pistas }}/5)</button>
+  </form>
+{% endblock %}
+
+{% block contenido %}
+<div class="panel">
+
+  <aside class="lateral">
+    <div class="lateral-caso">
+      <h2>{{ ficha.Titulo }}</h2>
+      <p class="tenue">{{ ficha.Hecho }}</p>
+      <p class="tenue">{{ ficha.LugarNombre }} &middot; {{ ficha.HoraTexto }}</p>
+    </div>
+    <nav class="menu">
+      {% for clave, nombre in secciones %}
+      <a href="/investigacion/{{ sesion_id }}?seccion={{ clave }}"
+         class="menu-item {% if clave == seccion %}activo{% endif %}">{{ nombre }}</a>
+      {% endfor %}
+    </nav>
+  </aside>
+
+  <section class="principal">
+    {% if mensaje %}
+    <div class="mensaje">{{ mensaje }}</div>
+    {% endif %}
+
+    {% if sesion.estado != "en_curso" %}
+    <div class="mensaje mensaje-cerrado">
+      Esta investigacion ya fue cerrada.
+      <a href="/investigacion/{{ sesion_id }}/informe" class="enlace">Ver el informe final</a>.
+    </div>
+    {% endif %}
+
+    {# ---------------------------------------------------------------- #}
+    {% if seccion == "resumen" %}
+      <h1>Resumen del caso</h1>
+      <div class="ficha">
+        <p><strong>Incidente.</strong> {{ ficha.Hecho }}</p>
+        <p><strong>Lugar.</strong> {{ ficha.LugarNombre }}</p>
+        <p><strong>Hora.</strong> {{ ficha.HoraTexto }}</p>
+        <p><strong>Victima.</strong> {{ ficha.Victima }}</p>
+        <p><strong>Dificultad.</strong> {{ ficha.Dificultad }}</p>
+      </div>
+      <p class="tarjeta-texto">{{ ficha.Descripcion }}</p>
+      <p class="tenue">
+        Usa el menu de la izquierda. Empieza interrogando a los implicados e
+        investigando los lugares: las contradicciones solo aparecen entre los
+        elementos que ya descubriste.
+      </p>
+
+    {# ---------------------------------------------------------------- #}
+    {% elif seccion == "sospechosos" %}
+      <h1>Sospechosos</h1>
+      <table class="tabla">
+        <thead><tr><th>Nombre</th><th>Identificador</th><th>Interrogado</th></tr></thead>
+        <tbody>
+          {% for s in sospechosos %}
+          <tr>
+            <td><strong>{{ s.Nombre }}</strong></td>
+            <td class="mono tenue">{{ s.Id }}</td>
+            <td>{{ "Si" if s.interrogado else "No" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+    {# ---------------------------------------------------------------- #}
+    {% elif seccion == "interrogatorios" %}
+      <h1>Interrogar</h1>
+      <p class="tenue">Cada interrogatorio revela la declaracion y la coartada de esa persona.</p>
+      <h2>Sospechosos</h2>
+      <div class="acciones">
+        {% for s in sospechosos %}
+        <form method="post" action="/investigacion/{{ sesion_id }}/interrogar">
+          <input type="hidden" name="persona" value="{{ s.Id }}">
+          <button type="submit" class="boton {% if s.interrogado %}boton-suave{% endif %}">
+            {{ s.Nombre }}{% if s.interrogado %} &check;{% endif %}
+          </button>
+        </form>
+        {% endfor %}
+      </div>
+      <h2>Testigos</h2>
+      <div class="acciones">
+        {% for t in testigos %}
+        <form method="post" action="/investigacion/{{ sesion_id }}/interrogar">
+          <input type="hidden" name="persona" value="{{ t.Id }}">
+          <button type="submit" class="boton boton-suave">{{ t.Nombre }}</button>
+        </form>
+        {% endfor %}
+      </div>
+
+    {# ---------------------------------------------------------------- #}
+    {% elif seccion == "lugares" %}
+      <h1>Investigar lugares</h1>
+      <div class="rejilla">
+        {% for l in lugares %}
+        <article class="tarjeta">
+          <h3>{{ l.Nombre }}</h3>
+          <p class="tarjeta-texto">{{ l.Descripcion }}</p>
+          <form method="post" action="/investigacion/{{ sesion_id }}/investigar-lugar">
+            <input type="hidden" name="lugar" value="{{ l.Id }}">
+            <button type="submit" class="boton {% if l.investigado %}boton-suave{% endif %}">
+              {{ "Volver a inspeccionar" if l.investigado else "Inspeccionar" }}
+            </button>
+          </form>
+        </article>
+        {% endfor %}
+      </div>
+
+    {# ---------------------------------------------------------------- #}
+    {% elif seccion == "evidencias" %}
+      <h1>Evidencias halladas</h1>
+      {% if evidencias %}
+      <table class="tabla">
+        <thead><tr><th>Id</th><th>Tipo</th><th>Descripcion</th><th>Lugar</th><th>Hora</th><th></th></tr></thead>
+        <tbody>
+          {% for e in evidencias %}
+          <tr>
+            <td class="mono">{{ e.Id }}</td>
+            <td>{{ e.Tipo }}</td>
+            <td>{{ e.Descripcion }}</td>
+            <td>{{ e.Lugar }}</td>
+            <td class="mono">{{ e.Hora }}</td>
+            <td>
+              <form method="post" action="/investigacion/{{ sesion_id }}/examinar">
+                <input type="hidden" name="evidencia" value="{{ e.Id }}">
+                <button type="submit" class="boton boton-mini">Examinar</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="aviso">Aun no has hallado evidencias. Inspecciona los lugares del caso.</p>
+      {% endif %}
+
+    {# ---------------------------------------------------------------- #}
+    {% elif seccion == "relaciones" %}
+      <h1>Relaciones entre las personas</h1>
+      <table class="tabla">
+        <thead><tr><th>Persona</th><th>Relacion</th><th>Con</th></tr></thead>
+        <tbody>
+          {% for r in relaciones %}
+          <tr><td>{{ r.Nombre1 }}</td><td><span class="pastilla">{{ r.Tipo }}</span></td><td>{{ r.Nombre2 }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+    {# ---------------------------------------------------------------- #}
+    {% elif seccion == "analisis" %}
+      <h1>Motivos y oportunidades</h1>
+      <h2>Los cuatro pilares</h2>
+      <table class="tabla">
+        <thead>
+          <tr><th>Sospechoso</th><th>Acceso</th><th>Oportunidad</th><th>Motivo</th><th>Medios</th><th>Coartada</th></tr>
+        </thead>
+        <tbody>
+          {% for p in pilares %}
+          <tr>
+            <td><strong>{{ p.Nombre }}</strong></td>
+            <td class="{{ 'si' if p.Acceso == 'si' else 'no' }}">{{ p.Acceso }}</td>
+            <td class="{{ 'si' if p.Oportunidad == 'si' else 'no' }}">{{ p.Oportunidad }}</td>
+            <td class="{{ 'si' if p.Motivo == 'si' else 'no' }}">{{ p.Motivo }}</td>
+            <td class="{{ 'si' if p.Medios == 'si' else 'no' }}">{{ p.Medios }}</td>
+            <td class="{{ 'no' if p.Coartada == 'valida' else 'si' }}">{{ p.Coartada }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <h2>Motivos conocidos</h2>
+      {% if motivos %}
+      <ul class="lista">
+        {% for m in motivos %}
+        <li><strong>{{ m.Nombre }}</strong> <span class="pastilla">{{ m.Tipo }}</span><br>{{ m.Descripcion }}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="aviso">Interroga a los sospechosos para conocer sus motivos.</p>
+      {% endif %}
+
+    {# ---------------------------------------------------------------- #}
+    {% elif seccion == "coartadas" %}
+      <h1>Coartadas</h1>
+      <table class="tabla">
+        <thead><tr><th>Sospechoso</th><th>Lugar</th><th>Hora</th><th>Testigo</th><th>Estado</th><th>Razonamiento</th></tr></thead>
+        <tbody>
+          {% for c in coartadas %}
+          <tr>
+            <td><strong>{{ c.Nombre }}</strong></td>
+            <td>{{ c.Lugar }}</td>
+            <td class="mono">{{ c.Hora }}</td>
+            <td>{{ c.Testigo }}</td>
+            <td class="{{ 'no' if c.Estado == 'valida' else 'si' }}">{{ c.Estado }}</td>
+            <td class="tenue">{{ c.Motivo }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+    {# ---------------------------------------------------------------- #}
+    {% elif seccion == "tiempo" %}
+      <h1>Linea temporal</h1>
+      {% if eventos %}
+      <ol class="cronologia">
+        {% for e in eventos %}
+        <li>
+          <span class="cronologia-hora mono">{{ e.HoraTexto }}</span>
+          <div>
+            <strong>{{ e.LugarNombre }}</strong>
+            <p>{{ e.Descripcion }}</p>
+          </div>
+        </li>
+        {% endfor %}
+      </ol>
+      {% else %}
+      <p class="aviso">La linea temporal se construye con los eventos que descubras al inspeccionar lugares.</p>
+      {% endif %}
+
+    {# ---------------------------------------------------------------- #}
+    {% elif seccion == "contradicciones" %}
+      <h1>Contradicciones detectadas</h1>
+      <p class="tenue">
+        Solo se analizan las declaraciones y evidencias que ya descubriste.
+        El filtrado y la deteccion los realiza el motor Prolog.
+      </p>
+      {% if contradicciones %}
+      <ul class="lista">
+        {% for c in contradicciones %}
+        <li>
+          <span class="pastilla">{{ "declaracion vs evidencia" if c.Tipo == "declaracion_vs_evidencia" else "entre declaraciones" }}</span>
+          <span class="mono tenue">{{ c.A }} &harr; {{ c.B }}</span>
+          <p>{{ c.Texto }}</p>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="aviso">Ninguna contradiccion entre lo que conoces hasta ahora.</p>
+      {% endif %}
+
+    {# ---------------------------------------------------------------- #}
+    {% elif seccion == "sospecha" %}
+      <h1>Nivel de sospecha</h1>
+      <p class="tenue">Puntaje calculado en Prolog sumando los factores demostrables de cada persona.</p>
+      <table class="tabla">
+        <thead><tr><th>Sospechoso</th><th>Puntaje</th><th>Nivel</th><th></th></tr></thead>
+        <tbody>
+          {% for s in sospecha %}
+          <tr>
+            <td><strong>{{ s.Nombre }}</strong></td>
+            <td class="mono">{{ s.Puntaje }}</td>
+            <td><span class="etiqueta etiqueta-{{ s.Categoria }}">{{ s.Categoria | etiqueta_categoria }}</span></td>
+            <td class="barra-celda">
+              <div class="barra"><div class="barra-relleno" style="width: {{ [s.Puntaje|int, 150]|min * 100 // 150 }}%"></div></div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+    {# ---------------------------------------------------------------- #}
+    {% elif seccion == "explicacion" %}
+      <h1>Explicacion logica</h1>
+      {% if explicacion.conclusion %}
+      <div class="ficha">
+        <p><strong>Conclusion del motor.</strong>
+          {% if explicacion.conclusion.Estado == "resuelto" %}
+            Responsable: <strong>{{ explicacion.conclusion.NombreResponsable }}</strong>
+            ({{ explicacion.conclusion.Puntaje }} puntos)
+          {% else %}
+            La deduccion es inconcluyente con la informacion registrada.
+          {% endif %}
+        </p>
+      </div>
+      {% endif %}
+
+      <h2>Reglas activadas</h2>
+      <table class="tabla">
+        <thead><tr><th>Regla</th><th>Nombre</th><th>Que establece</th><th>Dato</th></tr></thead>
+        <tbody>
+          {% for r in explicacion.reglas %}
+          <tr>
+            <td class="mono">{{ r.Id }}</td>
+            <td><strong>{{ r.Nombre }}</strong></td>
+            <td class="tenue">{{ r.Descripcion }}</td>
+            <td class="mono tenue">{{ r.Detalle }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      {% if explicacion.complices %}
+      <h2>Posibles complices</h2>
+      <ul class="lista">
+        {% for c in explicacion.complices %}
+        <li><strong>{{ c.Nombre }}</strong><p>{{ c.Texto }}</p></li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+
+      <h2>Por que se descarta a los demas</h2>
+      <ul class="lista">
+        {% for d in explicacion.descartes %}
+        <li><strong>{{ d.Nombre }}</strong><p>{{ d.Texto }}</p></li>
+        {% endfor %}
+      </ul>
+
+    {# ---------------------------------------------------------------- #}
+    {% elif seccion == "bitacora" %}
+      <h1>Bitacora de investigacion</h1>
+      <table class="tabla">
+        <thead><tr><th>Momento</th><th>Accion</th><th>Detalle</th></tr></thead>
+        <tbody>
+          {% for b in bitacora %}
+          <tr>
+            <td class="mono tenue">{{ b.momento }}</td>
+            <td><span class="pastilla">{{ b.accion }}</span></td>
+            <td>{{ b.detalle }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+    {# ---------------------------------------------------------------- #}
+    {% elif seccion == "acusacion" %}
+      <h1>Acusacion final</h1>
+      {% if sesion.estado == "en_curso" %}
+      <p class="aviso">
+        La acusacion cierra la investigacion y no se puede deshacer.
+        El sistema comparara tu acusacion con el responsable que deduce el motor.
+      </p>
+      <div class="acciones">
+        {% for s in sospechosos %}
+        <form method="post" action="/investigacion/{{ sesion_id }}/acusar">
+          <input type="hidden" name="acusado" value="{{ s.Id }}">
+          <button type="submit" class="boton boton-peligro">Acusar a {{ s.Nombre }}</button>
+        </form>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p>Ya emitiste una acusacion. <a href="/investigacion/{{ sesion_id }}/informe" class="enlace">Ver el informe final</a>.</p>
+      {% endif %}
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

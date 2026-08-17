@@ -45,6 +45,16 @@ async def ciclo_de_vida(app: FastAPI):
     casos = engine.valores("caso(Id, _, _, _)", "Id")
     log.info("Motor Prolog listo (backend=%s). Casos: %s", engine.nombre, casos)
 
+    # El panel /admin escribe codigo Prolog que el servidor luego ejecuta. Con
+    # las credenciales de fabrica, exponer el puerto a Internet es entregar el
+    # servidor. Se avisa en cada arranque para que no pase inadvertido.
+    if config.usa_credenciales_por_defecto():
+        log.warning(
+            "Credenciales de administracion POR DEFECTO en uso. Definir "
+            "LD_ADMIN_USER y LD_ADMIN_PASS (ver .env.example) antes de exponer "
+            "el sistema fuera de localhost."
+        )
+
     yield
     log.info("Logic Detective detenido.")
 

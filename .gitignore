@@ -1,0 +1,64 @@
+# =============================================================================
+# Logic Detective — archivos que NUNCA deben llegar al repositorio
+# =============================================================================
+
+# --- Secretos y configuracion local -----------------------------------------
+# .env alimenta a docker-compose (LD_ADMIN_USER / LD_ADMIN_PASS). Jamas se sube.
+# La plantilla publica y sin valores reales es .env.example.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credenciales*.json
+service-account*.json
+
+# --- Python ------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# --- Entornos virtuales ------------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+
+# --- Pruebas y cobertura -----------------------------------------------------
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.tox/
+.mypy_cache/
+.ruff_cache/
+
+# --- Datos generados en tiempo de ejecucion ----------------------------------
+# La base de datos de sesiones y bitacoras se crea sola al arrancar; contiene
+# datos de partidas, no del proyecto. Igual los respaldos que genera el modulo
+# administrativo al editar o eliminar casos.
+datos/*.db
+datos/*.db-journal
+datos/*.db-wal
+datos/*.db-shm
+datos/respaldos/
+
+# --- Editores y sistema operativo --------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# --- Logs --------------------------------------------------------------------
+*.log
+logs/

@@ -13,7 +13,9 @@ services:
       # carga. Para forzar uno u otro: pyswip | subprocess
       LD_PROLOG_BACKEND: auto
       LD_DB: /app/datos/logic_detective.db
-      # Cambiar en despliegue real.
+      # Se toman del archivo .env de la raiz (plantilla: .env.example), que NO
+      # esta versionado. Los valores de reserva solo sirven en local: sin .env,
+      # la aplicacion avisa en el log de que sigue con credenciales de fabrica.
       LD_ADMIN_USER: ${LD_ADMIN_USER:-admin}
       LD_ADMIN_PASS: ${LD_ADMIN_PASS:-detective2026}
     volumes:

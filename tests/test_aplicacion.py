@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import pytest
 
+from app import config
 from tests.conftest import CASOS, SOLUCIONES
 
 
@@ -235,8 +236,12 @@ def test_46_una_sesion_inexistente_da_error_controlado(cliente):
 # ---------------------------------------------------------------------------
 
 def test_47_el_modulo_administrativo_exige_autenticacion(cliente):
+    # Las credenciales se leen de la configuracion, no se escriben aqui: asi
+    # rotar la clave de administracion no rompe la suite.
     assert cliente.get("/admin").status_code == 401
-    assert cliente.get("/admin", auth=("admin", "detective2026")).status_code == 200
+    assert cliente.get("/admin", auth=("intruso", "clave_falsa")).status_code == 401
+    credenciales = (config.USUARIO_ADMIN, config.CLAVE_ADMIN)
+    assert cliente.get("/admin", auth=credenciales).status_code == 200
 
 
 def test_48_no_se_puede_inyectar_una_meta_prolog(cliente):

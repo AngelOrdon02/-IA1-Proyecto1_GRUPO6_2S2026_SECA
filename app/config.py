@@ -35,9 +35,24 @@ DESCRIPCION_APP = (
 )
 VERSION = "1.0.0"
 
-# Credenciales del modulo administrativo.
-USUARIO_ADMIN = os.getenv("LD_ADMIN_USER", "admin")
-CLAVE_ADMIN = os.getenv("LD_ADMIN_PASS", "detective2026")
+# Credenciales del modulo administrativo. Los valores de por defecto son SOLO
+# para desarrollo local: el panel /admin edita la base de conocimiento y ese
+# codigo Prolog se ejecuta en el servidor, asi que en un despliegue publico
+# equivalen a dar acceso al servidor. Se sobreescriben con .env (ver
+# .env.example), nunca editando este archivo.
+USUARIO_ADMIN_POR_DEFECTO = "admin"
+CLAVE_ADMIN_POR_DEFECTO = "detective2026"
+
+USUARIO_ADMIN = os.getenv("LD_ADMIN_USER", USUARIO_ADMIN_POR_DEFECTO)
+CLAVE_ADMIN = os.getenv("LD_ADMIN_PASS", CLAVE_ADMIN_POR_DEFECTO)
+
+
+def usa_credenciales_por_defecto() -> bool:
+    """Cierto si el administrador sigue con las credenciales de fabrica."""
+    return (
+        USUARIO_ADMIN == USUARIO_ADMIN_POR_DEFECTO
+        and CLAVE_ADMIN == CLAVE_ADMIN_POR_DEFECTO
+    )
 
 # Numero maximo de pistas por sesion.
 MAX_PISTAS = 5

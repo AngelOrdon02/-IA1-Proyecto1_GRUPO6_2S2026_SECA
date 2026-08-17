@@ -94,6 +94,13 @@ exportar, eliminar con respaldo y supervisar el historial de sesiones.
 | `LD_TIMEOUT` | `30` | Segundos máximos por consulta |
 | `LD_ADMIN_USER` / `LD_ADMIN_PASS` | `admin` / `detective2026` | Credenciales de administración |
 
+Para desplegar, copiar la plantilla y rellenarla — `.env` **no se versiona**:
+
+```bash
+cp .env.example .env
+python3 -c "import secrets; print(secrets.token_urlsafe(24))"   # clave admin
+```
+
 ## Documentación
 
 | Documento | Contenido |
@@ -123,7 +130,9 @@ docs/            Documentación técnica
 | Módulo de investigación (16 acciones) | Completo |
 | Módulo administrativo | Completo |
 | Docker y Docker Compose | Funcionales |
-| CI/CD (GitHub Actions) | Configurado |
 | Pruebas automatizadas | 86 pasando |
+| CI/CD (GitHub Actions) | **Pendiente** — no existe `.github/workflows/` |
 | Despliegue en la nube | Pendiente |
 | Manual con capturas | Pendiente |
+
+El detalle de lo que falta, con prioridades, está en [TODO.md](TODO.md).

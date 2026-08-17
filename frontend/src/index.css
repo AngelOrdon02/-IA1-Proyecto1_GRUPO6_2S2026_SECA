@@ -2,61 +2,57 @@
 
 /* ---------------------------------------------------------------------------
    Sistema de diseno — Logic Detective
-   Paleta noir/laton sobre fondo oscuro. Todos los colores de texto verificados
-   contra AA (4.5:1) sobre --color-bg y sobre --color-surface-2, que son los dos
-   fondos donde llegan a apoyarse.
+   Paleta esmeralda/verde bosque sobre fondo oscuro. Todos los colores de
+   texto verificados contra AA (4.5:1) sobre --color-bg y sobre
+   --color-surface-2, que son los dos fondos donde llegan a apoyarse.
    --------------------------------------------------------------------------- */
 
 @theme {
   /* Superficies -------------------------------------------------------- */
-  /* Negro azulado profundo: base sobre la que componen las auroras.
-     Mas oscuro que el #0a0c11 original, asi que el contraste del texto
-     (verificado contra el valor anterior) solo mejora. */
-  --color-bg: #070a0f;
-  --color-bg-soft: #0b0e15;
-  --color-surface: #141822;
-  --color-surface-2: #1a1f2b;
-  --color-surface-3: #222835;
-  --color-surface-hover: #1d2330;
-  --color-surface-active: #262d3c;
+  /* Verde noche: los grises llevan un sesgo verdoso sutil para que las
+     superficies pertenezcan a la misma familia que el acento esmeralda. */
+  --color-bg: #0a0f0d;
+  --color-bg-soft: #0d1311;
+  --color-surface: #131a17;
+  --color-surface-2: #18211d;
+  --color-surface-3: #212b26;
+  --color-surface-hover: #1c2621;
+  --color-surface-active: #25302a;
   /* Paneles con desenfoque: opacos lo suficiente para no heredar el aura */
-  --color-glass: rgba(13, 16, 23, 0.82);
+  --color-glass: rgba(12, 17, 15, 0.82);
 
   /* Lineas ------------------------------------------------------------- */
-  --color-border: #242b38;
-  --color-border-strong: #3a4356;
+  --color-border: #24312b;
+  --color-border-strong: #3a4c42;
 
   /* Texto -------------------------------------------------------------- */
-  --color-text: #eef1f6; /* 17.3:1 sobre bg */
-  --color-text-muted: #a9b3c4; /*  9.2:1 sobre bg */
-  --color-text-dim: #818ea3; /*  5.9:1 sobre bg — minimo legible */
+  --color-text: #eef4f0; /* 17.5:1 sobre bg */
+  --color-text-muted: #a9bab0; /*  9.3:1 sobre bg */
+  --color-text-dim: #80938a; /*  5.9:1 sobre bg — minimo legible */
 
   /* Acentos plenos: iconos, bordes, barras, fondos de boton ------------- */
-  --color-accent: #f0b429; /* laton — marca y accion primaria */
-  --color-accent-ink: #12100b; /* texto sobre relleno de acento */
-  --color-info: #5eb0ef;
-  --color-success: #3fb950;
-  --color-warning: #e3a008;
-  --color-danger: #f26d6d;
+  --color-accent: #2dd4a7; /* esmeralda — marca y accion primaria */
+  --color-accent-ink: #062019; /* texto sobre relleno de acento (9:1) */
+  --color-info: #5db6ee;
+  --color-success: #4ade80;
+  --color-warning: #d9a13c;
+  --color-danger: #f47272;
 
   /* Acentos claros: texto sobre fondos teñidos (bg-<color>/12) ---------- */
-  --color-accent-soft: #ffd479;
-  --color-info-soft: #9bcdf7;
-  --color-success-soft: #7ee094;
-  --color-warning-soft: #f5c451;
-  --color-danger-soft: #ff9b9b;
-
-  /* Alias heredados del tema anterior */
-  --color-accent-mint: #3fb950;
-  --color-accent-gold: #e3a008;
+  --color-accent-soft: #82ecc9;
+  --color-info-soft: #a3d6f8;
+  --color-success-soft: #93efb2;
+  --color-warning-soft: #f2c377;
+  --color-danger-soft: #ffa8a8;
 
   /* Aurora -------------------------------------------------------------
      Colores de las cortinas de luz del fondo. Ninguna parada llega a
      blanco puro: ese fue el error que lavaba el texto en la primera
-     version con blend modes. */
-  --color-aurora-teal: #49cf9e;
-  --color-aurora-cyan: #00e5ff;
-  --color-aurora-violet: #593e97;
+     version con blend modes. El "violet" es ahora un azul profundo que
+     aporta contrapunto frio a las cortinas esmeralda. */
+  --color-aurora-teal: #35d49c;
+  --color-aurora-cyan: #2bd9c7;
+  --color-aurora-violet: #2c5c8a;
 
   /* Sombras con luz ------------------------------------------------------
      Las cards combinan una hairline superior luminosa (inset) con una
@@ -162,7 +158,7 @@
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
-    scrollbar-color: #2f3746 transparent;
+    scrollbar-color: #2c3a33 transparent;
   }
 
   body {
@@ -227,14 +223,14 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #2f3746;
+    background: #2c3a33;
     border: 3px solid transparent;
     background-clip: padding-box;
     border-radius: 999px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #414b5e;
+    background: #3e5248;
     background-clip: padding-box;
   }
 

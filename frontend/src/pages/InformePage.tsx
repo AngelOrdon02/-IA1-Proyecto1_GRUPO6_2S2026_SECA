@@ -17,7 +17,6 @@ import {
   Printer,
   Network,
   History,
-  FileText,
 } from "lucide-react";
 import AuraBackground from "@/organisms/AuraBackground.tsx";
 import { SuspicionBar } from "@/organisms/ChatMessageContent.tsx";
@@ -50,6 +49,9 @@ export default function InformePage() {
       })
       .catch(() => setLoading(false));
   }, [sesionId]);
+
+  // Opcional 3: exportar el informe como PDF usando la impresión del navegador.
+  const handlePrint = () => window.print();
 
   if (loading) {
     return (
@@ -88,35 +90,29 @@ export default function InformePage() {
 
   return (
     <AuraBackground>
-      <div className="min-h-dvh px-5 py-8 sm:px-8 sm:py-12">
-        <div className="mx-auto w-full max-w-4xl">
-          <div className="mb-8 flex flex-wrap items-center justify-between gap-4 print:hidden">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-2 text-sm text-text-muted transition-colors hover:text-text"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Volver al inicio
-            </Link>
+      {/* Opcional 3: estilos de impresión — oculta chrome de la app,
+          fuerza fondo blanco y texto negro para una salida PDF limpia. */}
+      <style>{`
+        @media print {
+          body > *:not(#informe-root) { display: none !important; }
+          #informe-root * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          body, #informe-root { background: white !important; color: black !important; }
+          .print\\:hidden, [data-aura], canvas { display: none !important; }
+          * { box-shadow: none !important; text-shadow: none !important; }
+          section, li, .informe-card { break-inside: avoid; }
+          @page { margin: 2cm; }
+        }
+      `}</style>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Link to="/historial">
-                <Button variant="ghost" size="sm">
-                  <History className="h-4 w-4" />
-                  <span className="hidden sm:inline">Historial</span>
-                </Button>
-              </Link>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => window.print()}
-                className="bg-accent text-accent-ink hover:brightness-110"
-              >
-                <Printer className="h-4 w-4" />
-                Exportar a PDF / Imprimir
-              </Button>
-            </div>
-          </div>
+      <div id="informe-root" className="min-h-dvh px-5 py-8 sm:px-8 sm:py-12">
+        <div className="mx-auto w-full max-w-4xl">
+          <Link
+            to="/"
+            className="mb-8 inline-flex items-center gap-2 text-sm text-text-muted transition-colors hover:text-text print:hidden"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Volver al inicio
+          </Link>
 
           {/* Cabecera del caso */}
           <header className="mb-8">
@@ -180,6 +176,12 @@ export default function InformePage() {
                     </>
                   )}
                 </p>
+                {/* Opcional 2: puntuacion final del detective */}
+                {informe.sesion.puntuacion !== undefined && (
+                  <p className="mt-2 text-sm font-medium text-accent-soft">
+                    Puntuación final: {informe.sesion.puntuacion} pts
+                  </p>
+                )}
               </div>
             </div>
           </Card>
@@ -223,7 +225,7 @@ export default function InformePage() {
               </Card>
             </section>
 
-            {/* Red de Vínculos y Evidencias (Opcional 6) */}
+            {/* Red de Vínculos y Evidencias — oculta al imprimir */}
             <section className="print:hidden">
               <SectionHeading
                 icon={Network}
@@ -243,7 +245,7 @@ export default function InformePage() {
                 {informe.reglas.map((r, i) => (
                   <li
                     key={r.Id}
-                    className="flex gap-4 rounded-xl border border-border bg-surface p-4"
+                    className="informe-card flex gap-4 rounded-xl border border-border bg-surface p-4"
                   >
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-accent/25 bg-accent/12 font-mono text-xs font-semibold text-accent-soft">
                       {i + 1}
@@ -389,35 +391,20 @@ export default function InformePage() {
             </section>
           </div>
 
+          {/* Footer con acciones — oculto al imprimir */}
           <div className="mt-12 flex flex-wrap justify-center gap-3 border-t border-border pt-8 print:hidden">
             <Link to="/">
-              <Button variant="secondary">
-                <ArrowLeft className="h-4 w-4" />
-                Volver al inicio
-              </Button>
+              <Button variant="primary">Volver al inicio</Button>
             </Link>
-            <Button
-              variant="primary"
-              onClick={() => window.print()}
-              className="bg-accent text-accent-ink hover:brightness-110"
-            >
+            {/* Opcional 3: exportar informe como PDF */}
+            <Button variant="secondary" onClick={handlePrint}>
               <Printer className="h-4 w-4" />
-              Imprimir / Guardar PDF
+              Exportar PDF
             </Button>
-            <a
-              href={`/api/sesiones/${sesionId}/informe/imprimir`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Button variant="ghost">
-                <FileText className="h-4 w-4" />
-                Vista Imprimible HTML
-              </Button>
-            </a>
             <Link to="/historial">
               <Button variant="ghost">
                 <History className="h-4 w-4" />
-                Ver Historial
+                Historial
               </Button>
             </Link>
             <a

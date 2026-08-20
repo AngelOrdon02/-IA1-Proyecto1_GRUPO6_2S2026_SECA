@@ -13,7 +13,14 @@ misma biblioteca nativa.
 from __future__ import annotations
 
 import logging
+import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
+
+# Asegurar que la raiz del proyecto este en sys.path para ejecucion directa
+_raiz_proyecto = Path(__file__).resolve().parent.parent
+if str(_raiz_proyecto) not in sys.path:
+    sys.path.insert(0, str(_raiz_proyecto))
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
@@ -143,3 +150,9 @@ if FRONTEND_INDEX.is_file():
             return FileResponse(destino)
 
         return FileResponse(FRONTEND_INDEX)
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run("app.main:app", host=config.HOST, port=config.PUERTO, reload=True)

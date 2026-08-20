@@ -34,6 +34,8 @@ DESCRIPCION_APP = (
     "Motor de inferencia en Prolog, interfaz e integracion en Python."
 )
 VERSION = "1.0.0"
+HOST = os.getenv("LD_HOST", "127.0.0.1")
+PUERTO = int(os.getenv("LD_PORT", "8000"))
 
 # Credenciales del modulo administrativo. Los valores de por defecto son SOLO
 # para desarrollo local: el panel /admin edita la base de conocimiento y ese

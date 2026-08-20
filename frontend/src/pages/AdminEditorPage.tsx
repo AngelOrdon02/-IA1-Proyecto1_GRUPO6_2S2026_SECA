@@ -12,6 +12,7 @@ export default function AdminEditorPage() {
   const [original, setOriginal] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!adminApi.isLoggedIn()) {
@@ -32,11 +33,12 @@ export default function AdminEditorPage() {
   async function handleGuardar() {
     if (!archivo) return;
     setSaving(true);
+    setError("");
     try {
       await adminApi.guardarFuente(archivo, contenido);
       navigate("/admin");
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Error al guardar");
+      setError(e instanceof Error ? e.message : "Error al guardar el archivo");
     } finally {
       setSaving(false);
     }
@@ -100,13 +102,25 @@ export default function AdminEditorPage() {
         </header>
 
         {/* El editor ocupa el alto disponible en vez de una altura fija */}
-        <div className="min-h-0 flex-1 p-4 sm:p-6">
+        <div className="flex min-h-0 flex-1 flex-col p-4 sm:p-6">
+          {error && (
+            <div className="mb-3 flex items-center justify-between rounded-xl border border-danger/30 bg-danger/10 px-4 py-2.5 text-xs text-danger-soft">
+              <span>{error}</span>
+              <button
+                type="button"
+                onClick={() => setError("")}
+                className="text-text-dim hover:text-text"
+              >
+                X
+              </button>
+            </div>
+          )}
           <textarea
             value={contenido}
             onChange={(e) => setContenido(e.target.value)}
             spellCheck={false}
             aria-label={`Contenido de ${archivo}`}
-            className="h-full w-full resize-none rounded-xl border border-border bg-surface p-4 font-mono text-sm leading-relaxed text-text transition-colors hover:border-border-strong focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30 focus-visible:outline-none"
+            className="h-full w-full flex-1 resize-none rounded-xl border border-border bg-surface p-4 font-mono text-sm leading-relaxed text-text transition-colors hover:border-border-strong focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30 focus-visible:outline-none"
           />
         </div>
       </div>

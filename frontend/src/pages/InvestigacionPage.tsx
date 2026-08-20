@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
-import { AlertCircle, FileText, MapPin, Clock } from "lucide-react";
+import { AlertCircle, FileText, MapPin, Clock, Star } from "lucide-react";
 import AuraBackground from "@/organisms/AuraBackground.tsx";
 import { ChatLayout } from "@/templates";
 import { ChatThread, ActionComposer, ExpedientePanel } from "@/organisms";
@@ -14,6 +14,9 @@ import { DIFICULTAD_LABELS, ESTADO_LABELS } from "@/lib/constants.ts";
 
 const TOTAL_PISTAS = 5;
 
+// Opcional 2: penalizacion por cada accion de investigacion.
+const DELTA_ACCION = -5;
+
 export default function InvestigacionPage() {
   const { sesion: sesionId } = useParams<{ sesion: string }>();
   const { sesiones, titulos, loading: loadingSesiones } = useSesiones();
@@ -24,6 +27,8 @@ export default function InvestigacionPage() {
   const [pistasUsadas, setPistasUsadas] = useState(0);
   const [sesionEstado, setSesionEstado] = useState<string>("en_curso");
   const [loadingData, setLoadingData] = useState(true);
+  // Opcional 2: puntuacion visible en la TopBar.
+  const [puntuacion, setPuntuacion] = useState<number>(100);
 
   const {
     messages,
@@ -46,11 +51,11 @@ export default function InvestigacionPage() {
       try {
         setLoadingData(true);
 
-        // La ficha se pide por id de CASO, no de sesion: antes se pasaba el id
-        // de sesion y la llamada siempre fallaba, dejando la pantalla sin
-        // titulo ni mensaje de apertura.
         const sesionRes = await api.sesion(sesionId!);
         const casoId = sesionRes.sesion.caso;
+
+        // Opcional 2: carga la puntuacion guardada en la sesion.
+        setPuntuacion(sesionRes.sesion.puntuacion ?? 100);
 
         const [fichaRes, sospechososRes, lugaresRes, evidenciasRes] =
           await Promise.all([
@@ -88,8 +93,17 @@ export default function InvestigacionPage() {
     loadData();
   }, [sesionId]);
 
-  /* El estado y las pistas se derivan de los mensajes para no volver a pedir
-     la sesion completa despues de cada accion. */
+  // Opcional 2: aplica una penalizacion tras cada accion del detective.
+  const aplicarPenalizacion = async () => {
+    if (!sesionId) return;
+    try {
+      const res = await api.registrarPuntos(sesionId, DELTA_ACCION);
+      setPuntuacion(res.puntuacion);
+    } catch {
+      // Si falla el registro de puntos no interrumpimos la investigacion.
+    }
+  };
+
   const veredicto = useMemo(
     () =>
       [...messages]
@@ -188,6 +202,11 @@ export default function InvestigacionPage() {
             >
               {ESTADO_LABELS[estadoActual] ?? estadoActual}
             </Badge>
+            {/* Opcional 2: badge de puntuacion en tiempo real */}
+            <span className="inline-flex items-center gap-1 rounded-full border border-accent/30 bg-accent/10 px-2.5 py-0.5 text-xs font-semibold text-accent-soft">
+              <Star className="h-3 w-3" />
+              {puntuacion} pts
+            </span>
           </>
         }
         actions={
@@ -231,16 +250,17 @@ export default function InvestigacionPage() {
           sesionEstado={estadoActual}
           onInterrogar={(id, nombre) => {
             interrogar(id, nombre);
+            aplicarPenalizacion();
             setSospechosos((prev) =>
               prev.map((s) => (s.Id === id ? { ...s, interrogado: true } : s)),
             );
           }}
           onInvestigarLugar={async (id, nombre) => {
             await investigarLugar(id, nombre);
+            aplicarPenalizacion();
             setLugares((prev) =>
               prev.map((l) => (l.Id === id ? { ...l, investigado: true } : l)),
             );
-            // El lugar pudo revelar evidencias nuevas para el menu Examinar.
             api
               .evidencias(sesionId)
               .then((r) => setEvidencias(r.evidencias))
@@ -249,8 +269,12 @@ export default function InvestigacionPage() {
           onExaminarEvidencia={(id) => {
             const ev = evidencias.find((e) => e.Id === id);
             examinarEvidencia(id, ev?.Tipo);
+            aplicarPenalizacion();
           }}
-          onSolicitarPista={solicitarPista}
+          onSolicitarPista={() => {
+            solicitarPista();
+            aplicarPenalizacion();
+          }}
           onAcusar={() => setShowAccusation(true)}
           disabled={isLoading || cerrada}
         />

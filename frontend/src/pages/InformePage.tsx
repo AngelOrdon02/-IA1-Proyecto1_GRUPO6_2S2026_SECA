@@ -14,6 +14,7 @@ import {
   Code2,
   MapPin,
   Clock,
+  Printer,
 } from "lucide-react";
 import AuraBackground from "@/organisms/AuraBackground.tsx";
 import { SuspicionBar } from "@/organisms/ChatMessageContent.tsx";
@@ -45,6 +46,9 @@ export default function InformePage() {
       })
       .catch(() => setLoading(false));
   }, [sesionId]);
+
+  // Opcional 3: exportar el informe como PDF usando la impresión del navegador.
+  const handlePrint = () => window.print();
 
   if (loading) {
     return (
@@ -83,11 +87,36 @@ export default function InformePage() {
 
   return (
     <AuraBackground>
-      <div className="min-h-dvh px-5 py-8 sm:px-8 sm:py-12">
+      {/* Opcional 3: estilos de impresión — oculta chrome de la app,
+          fuerza fondo blanco y texto negro para una salida PDF limpia. */}
+      <style>{`
+        @media print {
+          /* Oculta todo lo que no es el contenido del informe */
+          body > *:not(#informe-root) { display: none !important; }
+          #informe-root * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+          /* Fondo blanco, texto negro */
+          body, #informe-root { background: white !important; color: black !important; }
+
+          /* Oculta botones de navegacion y el fondo animado */
+          .print\\:hidden, [data-aura], canvas { display: none !important; }
+
+          /* Quita sombras y bordes de color para que luzca limpio en papel */
+          * { box-shadow: none !important; text-shadow: none !important; }
+
+          /* Evita cortes de pagina en medio de una seccion */
+          section, li, .informe-card { break-inside: avoid; }
+
+          /* Margenes de pagina */
+          @page { margin: 2cm; }
+        }
+      `}</style>
+
+      <div id="informe-root" className="min-h-dvh px-5 py-8 sm:px-8 sm:py-12">
         <div className="mx-auto w-full max-w-4xl">
           <Link
             to="/"
-            className="mb-8 inline-flex items-center gap-2 text-sm text-text-muted transition-colors hover:text-text"
+            className="mb-8 inline-flex items-center gap-2 text-sm text-text-muted transition-colors hover:text-text print:hidden"
           >
             <ArrowLeft className="h-4 w-4" />
             Volver al inicio
@@ -152,6 +181,12 @@ export default function InformePage() {
                     </>
                   )}
                 </p>
+                {/* Opcional 2: muestra la puntuacion final obtenida en el informe */}
+                {informe.sesion.puntuacion !== undefined && (
+                  <p className="mt-2 text-sm font-medium text-accent-soft">
+                    Puntuación final: {informe.sesion.puntuacion} pts
+                  </p>
+                )}
               </div>
             </div>
           </Card>
@@ -206,7 +241,7 @@ export default function InformePage() {
                 {informe.reglas.map((r, i) => (
                   <li
                     key={r.Id}
-                    className="flex gap-4 rounded-xl border border-border bg-surface p-4"
+                    className="informe-card flex gap-4 rounded-xl border border-border bg-surface p-4"
                   >
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-accent/25 bg-accent/12 font-mono text-xs font-semibold text-accent-soft">
                       {i + 1}
@@ -352,10 +387,16 @@ export default function InformePage() {
             </section>
           </div>
 
-          <div className="mt-12 flex flex-wrap justify-center gap-3 border-t border-border pt-8">
+          {/* Footer con acciones — oculto al imprimir */}
+          <div className="mt-12 flex flex-wrap justify-center gap-3 border-t border-border pt-8 print:hidden">
             <Link to="/">
               <Button variant="primary">Volver al inicio</Button>
             </Link>
+            {/* Opcional 3: exportar informe como PDF */}
+            <Button variant="secondary" onClick={handlePrint}>
+              <Printer className="h-4 w-4" />
+              Exportar PDF
+            </Button>
             <a
               href={`/api/sesiones/${sesionId}/informe`}
               target="_blank"

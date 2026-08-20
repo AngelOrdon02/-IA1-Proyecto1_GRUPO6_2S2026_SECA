@@ -24,6 +24,8 @@ import type {
   SospechososResponse,
   AcusarResponse,
   Sesion,
+  GrafoResponse,
+  HistorialResponse,
 } from "./types.ts";
 
 class ApiError extends Error {
@@ -154,6 +156,24 @@ export const api = {
 
   bitacora: (sesion: string) =>
     request<BitacoraResponse>(`/api/sesiones/${sesion}/bitacora`),
+
+  grafo: (sesion: string) =>
+    request<GrafoResponse>(`/api/sesiones/${sesion}/grafo`),
+
+  historial: (params?: {
+    caso?: string;
+    veredicto?: string;
+    estado?: string;
+    limite?: number;
+  }) => {
+    const search = new URLSearchParams();
+    if (params?.caso) search.set("caso", params.caso);
+    if (params?.veredicto) search.set("veredicto", params.veredicto);
+    if (params?.estado) search.set("estado", params.estado);
+    if (params?.limite) search.set("limite", String(params.limite));
+    const qs = search.toString();
+    return request<HistorialResponse>(`/api/historial${qs ? `?${qs}` : ""}`);
+  },
 };
 
 export { ApiError };

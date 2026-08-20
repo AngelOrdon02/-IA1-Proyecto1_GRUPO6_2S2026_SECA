@@ -360,3 +360,78 @@ export interface CrearSesionResponse {
   ok: boolean;
   sesion: string;
 }
+
+export interface GrafoNodo {
+  id: string;
+  label: string;
+  tipo: "sospechoso" | "persona" | "evidencia";
+  puntaje?: number;
+  categoria?: "bajo" | "medio" | "alto" | "muy_alto";
+  interrogado?: boolean;
+  rol?: string;
+  subtipo?: string;
+  descripcion?: string;
+  lugar?: string;
+  hora?: string;
+}
+
+export interface GrafoEnlace {
+  origen: string;
+  destino: string;
+  tipo: "evidencia_vinculo" | "relacion_personal" | "testigo_coartada";
+  etiqueta: string;
+}
+
+export interface GrafoData {
+  sesion: string;
+  caso: string;
+  nodos: GrafoNodo[];
+  enlaces: GrafoEnlace[];
+}
+
+export interface GrafoResponse {
+  ok: boolean;
+  grafo: GrafoData;
+}
+
+export interface HistorialSesion {
+  id: string;
+  caso: string;
+  caso_titulo: string;
+  caso_dificultad: "facil" | "medio" | "dificil";
+  iniciada: string;
+  cerrada: string | null;
+  estado: "en_curso" | "resuelto" | "fallido";
+  acusado: string | null;
+  nombre_acusado: string | null;
+  responsable_real: string;
+  veredicto: "correcto" | "incorrecto" | null;
+  puntaje_sospecha: string;
+  pistas: number;
+  total_acciones: number;
+  total_descubrimientos: number;
+  duracion_segundos: number | null;
+  duracion_texto: string;
+}
+
+export interface HistorialEstadisticas {
+  total: number;
+  resueltas: number;
+  fallidas: number;
+  en_curso: number;
+  tasa_exito: number;
+  promedio_pistas: number;
+  por_caso: Array<{
+    caso: string;
+    total: number;
+    correctas: number;
+    incorrectas: number;
+    en_curso: number;
+  }>;
+}
+
+export interface HistorialResponse {
+  ok: boolean;
+  sesiones: HistorialSesion[];
+  estadisticas: HistorialEstadisticas;
+}

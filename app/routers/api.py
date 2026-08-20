@@ -28,6 +28,10 @@ class Acusacion(BaseModel):
     acusado: str
 
 
+class DeltaPuntos(BaseModel):
+    delta: int
+
+
 # ---------------------------------------------------------------------------
 # Estado del sistema
 # ---------------------------------------------------------------------------
@@ -75,6 +79,18 @@ async def minimos(caso: str):
 @router.post("/sesiones")
 async def crear_sesion(datos: NuevaSesion):
     sesion = inv.iniciar(datos.caso)
+    return {"ok": True, "sesion": sesion}
+
+
+@router.post("/sesiones/aleatorio")
+async def crear_sesion_aleatoria():
+    """Abre una investigacion con un caso elegido al azar.
+
+    Opcional 1: seleccion aleatoria del caso al iniciar la aplicacion.
+    Devuelve el mismo shape que POST /sesiones para que el frontend
+    pueda redirigir a /investigacion/{sesion} sin cambios adicionales.
+    """
+    sesion = inv.iniciar_aleatorio()
     return {"ok": True, "sesion": sesion}
 
 
@@ -211,3 +227,16 @@ async def api_historial(
     return inv.historial_investigaciones(
         caso=caso, veredicto=veredicto, estado=estado, limite=limite
     )
+@router.post("/sesiones/{sesion}/puntos")
+async def api_puntos(sesion: str, datos: DeltaPuntos):
+    """Aplica un cambio de puntuacion a la sesion activa.
+
+    Opcional 2: sistema de puntuacion basado en consultas realizadas.
+    El frontend llama este endpoint despues de cada accion del detective,
+    pasando el delta correspondiente (negativo para penalizaciones,
+    positivo para bonos). La puntuacion nunca baja de 0.
+
+    Body: { "delta": -5 }
+    Respuesta: { "ok": true, "puntuacion": 85, "delta": -5 }
+    """
+    return {"ok": True, **inv.registrar_puntos(sesion, datos.delta)}

@@ -17,6 +17,7 @@ import type {
   MotivosResponse,
   OportunidadesResponse,
   PistaResponse,
+  PuntosResponse,
   RelacionesResponse,
   SaludResponse,
   SesionResponse,
@@ -73,6 +74,12 @@ export const api = {
     request<CrearSesionResponse>("/api/sesiones", {
       method: "POST",
       body: JSON.stringify({ caso }),
+    }),
+
+  // Opcional 1: abre una investigacion con un caso elegido al azar en el backend.
+  crearSesionAleatoria: () =>
+    request<CrearSesionResponse>("/api/sesiones/aleatorio", {
+      method: "POST",
     }),
 
   sesiones: () =>
@@ -174,6 +181,13 @@ export const api = {
     const qs = search.toString();
     return request<HistorialResponse>(`/api/historial${qs ? `?${qs}` : ""}`);
   },
+  // Opcional 2: aplica un delta de puntuacion a la sesion activa.
+  // delta negativo = penalizacion, positivo = bonus.
+  registrarPuntos: (sesion: string, delta: number) =>
+    request<PuntosResponse>(`/api/sesiones/${sesion}/puntos`, {
+      method: "POST",
+      body: JSON.stringify({ delta }),
+    }),
 };
 
 export { ApiError };

@@ -18,6 +18,8 @@ export interface FichaCaso {
   Victima: string;
 }
 
+// puntuacion y tiempo_inicio se agregaron en el Paso 1 (db.py).
+// Son opcionales con "?" para no romper sesiones antiguas que no los tengan.
 export interface Sesion {
   id: string;
   caso: string;
@@ -26,6 +28,8 @@ export interface Sesion {
   pistas: number;
   acusado: string | null;
   veredicto: "correcto" | "incorrecto" | null;
+  puntuacion?: number;
+  tiempo_inicio?: string;
 }
 
 export interface Sospechoso {
@@ -220,6 +224,10 @@ export interface InformeFinal {
   bitacora: BitacoraEntry[];
 }
 
+// ---------------------------------------------------------------------------
+// Responses
+// ---------------------------------------------------------------------------
+
 export interface SaludResponse {
   ok: boolean;
   backend: string;
@@ -251,6 +259,11 @@ export interface MinimosResponse {
 export interface SesionResponse {
   ok: boolean;
   sesion: Sesion;
+}
+
+export interface CrearSesionResponse {
+  ok: boolean;
+  sesion: string;
 }
 
 export interface SospechososResponse {
@@ -356,7 +369,8 @@ export interface ExaminarResponse {
   vinculos: EvidenciaVinculo[];
 }
 
-export interface CrearSesionResponse {
+// Opcional 2: respuesta del endpoint POST /sesiones/{sesion}/puntos
+export interface PuntosResponse {
   ok: boolean;
   sesion: string;
 }

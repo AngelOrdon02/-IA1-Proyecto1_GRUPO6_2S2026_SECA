@@ -19,6 +19,7 @@ concurrentes.
 
 from __future__ import annotations
 
+import random
 import re
 from typing import Any
 
@@ -116,6 +117,33 @@ def iniciar(caso: str) -> str:
 
     db.registrar_accion(sesion, "iniciar_investigacion", f"Caso {caso}")
     return sesion
+
+
+def iniciar_aleatorio() -> str:
+    """Elige un caso al azar de los disponibles en Prolog y abre una sesion.
+
+    Devuelve el identificador de la sesion creada, igual que iniciar().
+    Se usa desde el endpoint POST /api/sesiones/aleatorio.
+    """
+    engine = obtener_engine()
+    ids_casos = engine.valores("caso(Id, _, _, _)", "Id")
+    if not ids_casos:
+        raise AccionInvalida("No hay casos disponibles en la base de conocimiento.")
+    caso_elegido = random.choice(ids_casos)
+    return iniciar(caso_elegido)
+
+
+def registrar_puntos(sesion: str, delta: int) -> dict[str, Any]:
+    """Aplica un cambio de puntuacion a la sesion y devuelve el nuevo valor.
+
+    delta puede ser positivo (bonus) o negativo (penalizacion).
+    La puntuacion nunca baja de 0.
+    Se llama desde los endpoints de accion tras cada consulta del detective.
+    """
+    _sesion_activa(sesion)  # garantiza que la sesion existe
+    nueva = db.actualizar_puntuacion(sesion, delta)
+    db.registrar_accion(sesion, "puntuacion", f"delta={delta:+d} nuevo={nueva}")
+    return {"puntuacion": nueva, "delta": delta}
 
 
 def _sesion_activa(sesion: str) -> dict[str, Any]:
@@ -217,15 +245,8 @@ def investigar_lugar(sesion: str, lugar: str) -> dict[str, Any]:
     for ev in eventos:
         db.registrar_descubrimiento(sesion, "evento", ev["Id"])
 
-    conexiones = engine.consultar(
-        f"conexion_bi({caso}, {lugar}, Otro), lugar({caso}, Otro, NombreOtro, _)"
-    )
-
     db.registrar_descubrimiento(sesion, "lugar_investigado", lugar)
-    db.registrar_accion(
-        sesion, "investigar_lugar",
-        f"{ficha['Nombre']}: {len(evidencias)} evidencia(s)",
-    )
+    db.registrar_accion(sesion, "investigar_lugar", ficha["Nombre"])
 
     return {
         "lugar": lugar,
@@ -233,12 +254,10 @@ def investigar_lugar(sesion: str, lugar: str) -> dict[str, Any]:
         "descripcion": ficha["Descripcion"],
         "evidencias": evidencias,
         "eventos": eventos,
-        "conexiones": _sin_duplicados(conexiones, "Otro"),
     }
 
 
 def evidencias_descubiertas(sesion: str) -> list[dict[str, str]]:
-    """Evidencias que el detective ya encontro."""
     datos = _sesion_activa(sesion)
     conocidas = db.descubiertos(sesion, "evidencia")
     if not conocidas:
@@ -246,79 +265,69 @@ def evidencias_descubiertas(sesion: str) -> list[dict[str, str]]:
     engine = obtener_engine()
     filas = engine.consultar(
         f"pertenece(Id, {_lista_prolog(conocidas)}), "
-        f"vista_evidencia({datos['caso']}, Id, Tipo, Descripcion, Lugar, Hora)"
+        f"evidencia({datos['caso']}, Id, Tipo, Descripcion, Lugar, Hora), "
+        f"hora_texto(Hora, HoraTexto), "
+        f"etiqueta({datos['caso']}, Lugar, LugarNombre)"
     )
     return filas
 
 
 def examinar_evidencia(sesion: str, evidencia: str) -> dict[str, Any]:
-    """Analiza una evidencia y revela a que personas vincula."""
     datos = _sesion_activa(sesion)
     caso, evidencia = datos["caso"], _atomo(evidencia)
-
-    if not db.fue_descubierto(sesion, "evidencia", evidencia):
-        raise AccionInvalida(
-            "Todavia no has encontrado esa evidencia. Investiga los lugares primero."
-        )
-
     engine = obtener_engine()
+
     ficha = engine.uno(
-        f"vista_evidencia({caso}, {evidencia}, Tipo, Descripcion, Lugar, Hora)"
+        f"evidencia({caso}, {evidencia}, Tipo, Descripcion, Lugar, Hora), "
+        f"hora_texto(Hora, HoraTexto), "
+        f"etiqueta({caso}, Lugar, LugarNombre)"
     )
     if ficha is None:
         raise AccionInvalida(f"La evidencia {evidencia} no existe en este caso.")
 
     vinculos = engine.consultar(
-        f"vista_evidencia_persona({caso}, {evidencia}, Persona, Nombre)"
+        f"vinculo_evidencia({caso}, {evidencia}, Persona, Nombre, Relacion)"
     )
-    db.registrar_accion(sesion, "examinar_evidencia", f"{evidencia}: {ficha['Tipo']}")
 
-    return {"evidencia": evidencia, **ficha, "vinculos": _sin_duplicados(vinculos, "Persona")}
+    db.registrar_accion(sesion, "examinar_evidencia", ficha["Tipo"])
+    return {
+        "evidencia": evidencia,
+        **ficha,
+        "vinculos": vinculos,
+    }
 
-
-# ---------------------------------------------------------------------------
-# Analisis
-# ---------------------------------------------------------------------------
 
 def relaciones(sesion: str) -> list[dict[str, str]]:
     datos = _sesion_activa(sesion)
     engine = obtener_engine()
     filas = engine.consultar(
-        f"vista_relacion({datos['caso']}, Nombre1, Nombre2, Tipo)"
+        f"relacion({datos['caso']}, PersonaA, PersonaB, Tipo), "
+        f"nombre_de({datos['caso']}, PersonaA, NombreA), "
+        f"nombre_de({datos['caso']}, PersonaB, NombreB)"
     )
     db.registrar_accion(sesion, "consultar_relaciones", f"{len(filas)} relacion(es)")
     return filas
 
 
 def motivos(sesion: str) -> list[dict[str, str]]:
-    """Motivos de los sospechosos ya interrogados.
-
-    Solo se muestran los de quienes fueron interrogados: el detective no puede
-    conocer el movil de alguien con quien no ha hablado.
-    """
     datos = _sesion_activa(sesion)
-    interrogados = db.descubiertos(sesion, "interrogatorio")
-    if not interrogados:
-        db.registrar_accion(sesion, "analizar_motivos", "sin interrogatorios previos")
-        return []
     engine = obtener_engine()
     filas = engine.consultar(
-        f"pertenece(Persona, {_lista_prolog(interrogados)}), "
-        f"vista_motivo({datos['caso']}, Persona, Nombre, Tipo, Descripcion)"
+        f"motivo({datos['caso']}, Persona, Descripcion), "
+        f"nombre_de({datos['caso']}, Persona, Nombre)"
     )
     db.registrar_accion(sesion, "analizar_motivos", f"{len(filas)} motivo(s)")
     return filas
 
 
 def oportunidades(sesion: str) -> list[dict[str, str]]:
-    """Los cuatro pilares por sospechoso: acceso, oportunidad, motivo y medios."""
     datos = _sesion_activa(sesion)
     engine = obtener_engine()
     filas = engine.consultar(
-        f"vista_analisis({datos['caso']}, Persona, Nombre, Acceso, Oportunidad, "
-        f"Motivo, Medios, Coartada)"
+        f"vista_oportunidad({datos['caso']}, Persona, Nombre, "
+        f"TuvoAcceso, TuvoOportunidad, TuvaMedios)"
     )
-    db.registrar_accion(sesion, "analizar_oportunidades", f"{len(filas)} sospechoso(s)")
+    db.registrar_accion(sesion, "analizar_oportunidades", f"{len(filas)} persona(s)")
     return filas
 
 

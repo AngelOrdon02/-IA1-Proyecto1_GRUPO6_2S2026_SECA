@@ -20,14 +20,16 @@ from app import config
 
 ESQUEMA = """
 CREATE TABLE IF NOT EXISTS sesiones (
-    id          TEXT PRIMARY KEY,
-    caso        TEXT NOT NULL,
-    iniciada    TEXT NOT NULL,
-    estado      TEXT NOT NULL DEFAULT 'en_curso',
-    acusado     TEXT,
-    veredicto   TEXT,
-    pistas      INTEGER NOT NULL DEFAULT 0,
-    cerrada     TEXT
+    id           TEXT PRIMARY KEY,
+    caso         TEXT NOT NULL,
+    iniciada     TEXT NOT NULL,
+    estado       TEXT NOT NULL DEFAULT 'en_curso',
+    acusado      TEXT,
+    veredicto    TEXT,
+    pistas       INTEGER NOT NULL DEFAULT 0,
+    cerrada      TEXT,
+    puntuacion   INTEGER NOT NULL DEFAULT 100,
+    tiempo_inicio TEXT
 );
 
 CREATE TABLE IF NOT EXISTS descubrimientos (
@@ -50,6 +52,13 @@ CREATE TABLE IF NOT EXISTS bitacora (
 
 CREATE INDEX IF NOT EXISTS idx_bitacora_sesion ON bitacora(sesion);
 CREATE INDEX IF NOT EXISTS idx_desc_sesion     ON descubrimientos(sesion);
+"""
+
+# Migracion: agrega las columnas nuevas a bases existentes sin romper nada.
+# ALTER TABLE ignora el error si la columna ya existe (IGNORE).
+MIGRACIONES = """
+ALTER TABLE sesiones ADD COLUMN puntuacion    INTEGER NOT NULL DEFAULT 100;
+ALTER TABLE sesiones ADD COLUMN tiempo_inicio TEXT;
 """
 
 
@@ -76,9 +85,19 @@ def conexion() -> Iterator[sqlite3.Connection]:
 
 
 def inicializar() -> None:
-    """Crea las tablas si no existen. Se llama al arrancar la aplicacion."""
+    """Crea las tablas si no existen y aplica migraciones. Se llama al arrancar."""
     with conexion() as con:
         con.executescript(ESQUEMA)
+        # Aplica cada ALTER TABLE por separado; ignora si la columna ya existe.
+        for sentencia in MIGRACIONES.strip().splitlines():
+            sentencia = sentencia.strip()
+            if not sentencia:
+                continue
+            try:
+                con.execute(sentencia)
+            except sqlite3.OperationalError:
+                # "duplicate column name" — la columna ya existia, no pasa nada.
+                pass
 
 
 # ---------------------------------------------------------------------------
@@ -90,8 +109,9 @@ def crear_sesion(caso: str) -> str:
     sesion_id = uuid.uuid4().hex[:12]
     with conexion() as con:
         con.execute(
-            "INSERT INTO sesiones (id, caso, iniciada) VALUES (?, ?, ?)",
-            (sesion_id, caso, ahora()),
+            "INSERT INTO sesiones (id, caso, iniciada, puntuacion, tiempo_inicio) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (sesion_id, caso, ahora(), 100, ahora()),
         )
     return sesion_id
 
@@ -153,6 +173,24 @@ def incrementar_pistas(sesion_id: str) -> int:
             "SELECT pistas FROM sesiones WHERE id = ?", (sesion_id,)
         ).fetchone()
     return int(fila["pistas"]) if fila else 0
+
+
+def actualizar_puntuacion(sesion_id: str, delta: int) -> int:
+    """Suma delta a la puntuacion (puede ser negativo) y devuelve el nuevo valor.
+
+    La puntuacion nunca baja de 0: el detective no puede quedar en negativo.
+    """
+    with conexion() as con:
+        con.execute(
+            "UPDATE sesiones "
+            "SET puntuacion = MAX(0, puntuacion + ?) "
+            "WHERE id = ?",
+            (delta, sesion_id),
+        )
+        fila = con.execute(
+            "SELECT puntuacion FROM sesiones WHERE id = ?", (sesion_id,)
+        ).fetchone()
+    return int(fila["puntuacion"]) if fila else 0
 
 
 # ---------------------------------------------------------------------------

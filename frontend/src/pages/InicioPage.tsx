@@ -7,6 +7,7 @@ import {
   Scale,
   ArrowRight,
   FolderOpen,
+  Shuffle,
 } from "lucide-react";
 import AuraBackground from "@/organisms/AuraBackground.tsx";
 import { ChatLayout } from "@/templates";
@@ -47,6 +48,8 @@ export default function InicioPage() {
   const [casos, setCasos] = useState<Caso[]>([]);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState<string | null>(null);
+  // "aleatorio" es un valor centinela para el estado starting
+  const [startingRandom, setStartingRandom] = useState(false);
   const navigate = useNavigate();
   const {
     sesiones,
@@ -73,6 +76,18 @@ export default function InicioPage() {
       navigate(`/investigacion/${res.sesion}`);
     } catch {
       setStarting(null);
+    }
+  };
+
+  // Opcional 1: abre una sesion con un caso elegido al azar por el backend.
+  const handleStartRandom = async () => {
+    setStartingRandom(true);
+    try {
+      const res = await api.crearSesionAleatoria();
+      refetch();
+      navigate(`/investigacion/${res.sesion}`);
+    } catch {
+      setStartingRandom(false);
     }
   };
 
@@ -107,10 +122,25 @@ export default function InicioPage() {
                   una base de conocimiento en Prolog que deduce al responsable y
                   explica por qué.
                 </p>
+
+                {/* Opcional 1: botón de caso aleatorio */}
+                <div className="mt-6">
+                  <Button
+                    variant="secondary"
+                    onClick={handleStartRandom}
+                    disabled={startingRandom || starting !== null}
+                  >
+                    {startingRandom ? (
+                      <Spinner size="sm" />
+                    ) : (
+                      <Shuffle className="h-4 w-4" />
+                    )}
+                    Caso aleatorio
+                  </Button>
+                </div>
               </div>
 
-              {/* Ilustracion de portada: un halo teal la asienta sobre el aura
-                  en lugar de dejarla flotando suelta */}
+              {/* Ilustracion de portada */}
               <div className="relative mx-auto w-full max-w-md shrink-0 lg:max-w-lg">
                 <div
                   aria-hidden="true"
@@ -199,14 +229,11 @@ function CasoCard({
   const nuevo = caso.estado === "sin_iniciar";
 
   return (
-    /* No usa el atomo Card: la estructura con franja interna necesita control
-       total del padding, y `cn` (join simple) no resolveria el conflicto con
-       el `p-5` del atomo. Mismo lenguaje visual: gradiente + shadow-card. */
     <div
       className="group relative flex animate-fade-up flex-col overflow-hidden rounded-xl border border-border bg-gradient-to-b from-surface-2 to-surface shadow-card transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-border-strong hover:shadow-card-hover"
       style={{ animationDelay: `${(numero - 1) * 70}ms` }}
     >
-      {/* Franja teñida por dificultad: el color se percibe antes de leer */}
+      {/* Franja teñida por dificultad */}
       <span
         aria-hidden="true"
         className={`absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent to-transparent ${

@@ -10,6 +10,7 @@ vez consulta al motor Prolog.
 from __future__ import annotations
 
 from fastapi import APIRouter
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from app.prolog.engine import obtener_engine
@@ -180,3 +181,33 @@ async def api_informe(sesion: str):
 @router.get("/sesiones/{sesion}/bitacora")
 async def api_bitacora(sesion: str):
     return {"ok": True, "bitacora": inv.bitacora(sesion)}
+
+
+# ---------------------------------------------------------------------------
+# Opcionales 6, 7, 8
+# ---------------------------------------------------------------------------
+
+@router.get("/sesiones/{sesion}/grafo")
+async def api_grafo(sesion: str):
+    """Visualización gráfica de la relación entre sospechosos y evidencias (Opcional 6)."""
+    return {"ok": True, "grafo": inv.grafo_relaciones(sesion)}
+
+
+@router.get("/sesiones/{sesion}/informe/imprimir", response_class=HTMLResponse)
+async def api_informe_imprimir(sesion: str):
+    """Versión HTML imprimible/exportable a PDF del informe final (Opcional 7)."""
+    html = inv.generar_informe_html(sesion)
+    return HTMLResponse(content=html, status_code=200)
+
+
+@router.get("/historial")
+async def api_historial(
+    caso: str | None = None,
+    veredicto: str | None = None,
+    estado: str | None = None,
+    limite: int = 100,
+):
+    """Historial de investigaciones resueltas con estadísticas y filtros (Opcional 8)."""
+    return inv.historial_investigaciones(
+        caso=caso, veredicto=veredicto, estado=estado, limite=limite
+    )

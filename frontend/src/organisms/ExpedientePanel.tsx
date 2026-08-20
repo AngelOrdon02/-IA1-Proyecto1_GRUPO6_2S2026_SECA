@@ -10,10 +10,12 @@ import {
   FolderOpen,
   ScrollText,
   RefreshCw,
+  Network,
 } from "lucide-react";
 import { Badge, EmptyState, MonoText } from "@/atoms";
 import { TabItem } from "@/molecules";
 import { SuspicionBar } from "./ChatMessageContent.tsx";
+import GrafoRelaciones from "./GrafoRelaciones.tsx";
 import { api } from "@/api/client.ts";
 import type {
   Sospechoso,
@@ -36,6 +38,7 @@ interface ExpedientePanelProps {
 type TabKey =
   | "sospechosos"
   | "evidencias"
+  | "grafo"
   | "sospecha"
   | "coartadas"
   | "timeline"
@@ -46,6 +49,7 @@ type TabKey =
 const TABS: Array<{ key: TabKey; label: string; icon: typeof Users }> = [
   { key: "sospechosos", label: "Sospechosos", icon: Users },
   { key: "evidencias", label: "Evidencias", icon: Fingerprint },
+  { key: "grafo", label: "Grafo", icon: Network },
   { key: "sospecha", label: "Sospecha", icon: BarChart3 },
   { key: "coartadas", label: "Coartadas", icon: ShieldCheck },
   { key: "timeline", label: "Tiempo", icon: Clock },
@@ -93,6 +97,7 @@ export default function ExpedientePanel({
   const counts: Record<TabKey, number> = {
     sospechosos: sospechosos.length,
     evidencias: evidencias.length,
+    grafo: sospechosos.length + evidencias.length,
     sospecha: sospecha.length,
     coartadas: coartadas.length,
     timeline: timeline.length,
@@ -140,6 +145,13 @@ export default function ExpedientePanel({
           <SospechososTab sospechosos={sospechosos} />
         )}
         {activeTab === "evidencias" && <EvidenciasTab evidencias={evidencias} />}
+        {activeTab === "grafo" && (
+          <GrafoRelaciones
+            sesionId={sesionId}
+            refreshKey={refreshKey}
+            compact
+          />
+        )}
         {activeTab === "sospecha" && <SospechaTab sospecha={sospecha} />}
         {activeTab === "coartadas" && <CoartadasTab coartadas={coartadas} />}
         {activeTab === "timeline" && <TimelineTab eventos={timeline} />}

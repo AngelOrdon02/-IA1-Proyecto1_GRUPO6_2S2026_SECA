@@ -81,16 +81,28 @@ export default function AppSidebar({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 pb-4">
-          <div className="mb-2 flex items-center gap-2 px-2">
-            <History className="h-3.5 w-3.5 text-text-dim" />
-            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-text-dim">
-              Historial
-            </span>
-            {sesiones.length > 0 && (
-              <span className="ml-auto rounded-full bg-surface-3 px-2 text-xs font-semibold tabular-nums text-text-muted">
-                {sesiones.length}
-              </span>
-            )}
+          <div className="mb-2 flex items-center justify-between px-2">
+            <Link
+              to="/historial"
+              className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-text-dim transition-colors hover:text-accent-soft"
+              title="Abrir historial completo con estadísticas"
+            >
+              <History className="h-3.5 w-3.5" />
+              <span>Historial</span>
+            </Link>
+            <div className="flex items-center gap-1.5">
+              {sesiones.length > 0 && (
+                <span className="rounded-full bg-surface-3 px-2 text-xs font-semibold tabular-nums text-text-muted">
+                  {sesiones.length}
+                </span>
+              )}
+              <Link
+                to="/historial"
+                className="text-[11px] font-medium text-accent-soft hover:underline"
+              >
+                Ver todo
+              </Link>
+            </div>
           </div>
 
           {loading ? (

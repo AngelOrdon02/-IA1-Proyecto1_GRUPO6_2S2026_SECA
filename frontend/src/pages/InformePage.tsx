@@ -14,9 +14,14 @@ import {
   Code2,
   MapPin,
   Clock,
+  Printer,
+  Network,
+  History,
+  FileText,
 } from "lucide-react";
 import AuraBackground from "@/organisms/AuraBackground.tsx";
 import { SuspicionBar } from "@/organisms/ChatMessageContent.tsx";
+import GrafoRelaciones from "@/organisms/GrafoRelaciones.tsx";
 import {
   Card,
   Badge,
@@ -85,13 +90,33 @@ export default function InformePage() {
     <AuraBackground>
       <div className="min-h-dvh px-5 py-8 sm:px-8 sm:py-12">
         <div className="mx-auto w-full max-w-4xl">
-          <Link
-            to="/"
-            className="mb-8 inline-flex items-center gap-2 text-sm text-text-muted transition-colors hover:text-text"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Volver al inicio
-          </Link>
+          <div className="mb-8 flex flex-wrap items-center justify-between gap-4 print:hidden">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 text-sm text-text-muted transition-colors hover:text-text"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Volver al inicio
+            </Link>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Link to="/historial">
+                <Button variant="ghost" size="sm">
+                  <History className="h-4 w-4" />
+                  <span className="hidden sm:inline">Historial</span>
+                </Button>
+              </Link>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => window.print()}
+                className="bg-accent text-accent-ink hover:brightness-110"
+              >
+                <Printer className="h-4 w-4" />
+                Exportar a PDF / Imprimir
+              </Button>
+            </div>
+          </div>
 
           {/* Cabecera del caso */}
           <header className="mb-8">
@@ -110,6 +135,9 @@ export default function InformePage() {
               <span className="inline-flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5 text-text-dim" />
                 {informe.ficha.HoraTexto}
+              </span>
+              <span className="inline-flex items-center gap-1.5 font-mono text-xs text-text-dim">
+                Sesión: {informe.sesion.id} · Pistas: {informe.sesion.pistas}
               </span>
             </div>
           </header>
@@ -193,6 +221,15 @@ export default function InformePage() {
                   </div>
                 ))}
               </Card>
+            </section>
+
+            {/* Red de Vínculos y Evidencias (Opcional 6) */}
+            <section className="print:hidden">
+              <SectionHeading
+                icon={Network}
+                title="Red de Vínculos y Evidencias"
+              />
+              <GrafoRelaciones sesionId={sesionId!} />
             </section>
 
             {/* Cadena deductiva */}
@@ -352,9 +389,36 @@ export default function InformePage() {
             </section>
           </div>
 
-          <div className="mt-12 flex flex-wrap justify-center gap-3 border-t border-border pt-8">
+          <div className="mt-12 flex flex-wrap justify-center gap-3 border-t border-border pt-8 print:hidden">
             <Link to="/">
-              <Button variant="primary">Volver al inicio</Button>
+              <Button variant="secondary">
+                <ArrowLeft className="h-4 w-4" />
+                Volver al inicio
+              </Button>
+            </Link>
+            <Button
+              variant="primary"
+              onClick={() => window.print()}
+              className="bg-accent text-accent-ink hover:brightness-110"
+            >
+              <Printer className="h-4 w-4" />
+              Imprimir / Guardar PDF
+            </Button>
+            <a
+              href={`/api/sesiones/${sesionId}/informe/imprimir`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Button variant="ghost">
+                <FileText className="h-4 w-4" />
+                Vista Imprimible HTML
+              </Button>
+            </a>
+            <Link to="/historial">
+              <Button variant="ghost">
+                <History className="h-4 w-4" />
+                Ver Historial
+              </Button>
             </Link>
             <a
               href={`/api/sesiones/${sesionId}/informe`}

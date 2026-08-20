@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   Search,
   MessageSquare,
@@ -7,6 +7,7 @@ import {
   Scale,
   ArrowRight,
   FolderOpen,
+  History,
 } from "lucide-react";
 import AuraBackground from "@/organisms/AuraBackground.tsx";
 import { ChatLayout } from "@/templates";
@@ -153,7 +154,15 @@ export default function InicioPage() {
               ))}
             </div>
 
-            <Divider label="Casos disponibles" className="mb-6" />
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+              <Divider label="Casos disponibles" className="flex-1" />
+              <Link to="/historial">
+                <Button variant="ghost" size="sm" className="text-accent-soft hover:text-accent">
+                  <History className="h-4 w-4" />
+                  Ver Historial y Estadísticas
+                </Button>
+              </Link>
+            </div>
 
             {loading ? (
               <div className="flex justify-center py-16">

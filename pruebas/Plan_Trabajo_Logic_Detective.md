@@ -391,15 +391,15 @@ Una tarea está terminada cuando:
 
 | Entregable | Estado |
 |---|---|
-| Motor de inferencia, 16 predicados | ✅ Completo y validado |
-| 3 casos (4/10/5/5/10 cada uno) | ✅ Culpable único deducible en los tres |
-| Módulo de investigación, 16 acciones | ✅ 14 secciones funcionando |
-| Módulo administrativo | ✅ CRUD con validación sintáctica |
-| Puente PySwip + fallback subproceso | ✅ Ambos backends verificados |
-| `Dockerfile` + `docker-compose.yml` | ✅ Imagen construida y probada |
-| GitHub Actions (3 jobs) | ✅ Pasos verificados localmente |
-| Pruebas automatizadas | ✅ 86 pasando (el SMART pedía ≥10) |
-| Documentación técnica | ✅ 5 documentos en `docs/` |
+| Motor de inferencia, 16 predicados | [OK] Completo y validado |
+| 3 casos (4/10/5/5/10 cada uno) | [OK] Culpable único deducible en los tres |
+| Módulo de investigación, 16 acciones | [OK] 14 secciones funcionando |
+| Módulo administrativo | [OK] CRUD con validación sintáctica |
+| Puente PySwip + fallback subproceso | [OK] Ambos backends verificados |
+| `Dockerfile` + `docker-compose.yml` | [OK] Imagen construida y probada |
+| GitHub Actions (3 jobs) | [OK] Pasos verificados localmente |
+| Pruebas automatizadas | [OK] 86 pasando (el SMART pedía ≥10) |
+| Documentación técnica | [OK] 5 documentos en `docs/` |
 
 ### Lo que falta — trabajo real a repartir
 
@@ -414,7 +414,7 @@ Una tarea está terminada cuando:
 | 7 | `docs/consultas_ejemplo.md` con 15 consultas manuales | WS1 | Refuerza rubro 2.1 |
 | 8 | Ensayo de la defensa: cada quien explica lo suyo | Todos | Nota individual |
 
-> ⚠️ **La tarea 5 es la más urgente.** El proyecto está construido pero todos
+> [Alerta] **La tarea 5 es la más urgente.** El proyecto está construido pero todos
 > los commits son de una sola persona. La rúbrica otorga 30 puntos a "aportes
 > de los integrantes mediante commits identificables". Repartir las tareas
 > 1, 2, 3 y 7 entre los cuatro integrantes restantes **esta semana**, no la

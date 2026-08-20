@@ -27,7 +27,7 @@ declaración está disponible todavía**: hay que descubrirlas.
 
 ### Interrogar
 **Interrogatorios** → botón con el nombre de la persona. Revela su declaración y
-su coartada. Los ya interrogados quedan marcados con ✓.
+su coartada. Los ya interrogados quedan marcados con una etiqueta de completado.
 
 `[CAPTURA: sección Interrogatorios con una declaración visible]`
 

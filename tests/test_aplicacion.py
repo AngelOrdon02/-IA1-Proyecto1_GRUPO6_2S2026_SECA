@@ -238,10 +238,10 @@ def test_46_una_sesion_inexistente_da_error_controlado(cliente):
 def test_47_el_modulo_administrativo_exige_autenticacion(cliente):
     # Las credenciales se leen de la configuracion, no se escriben aqui: asi
     # rotar la clave de administracion no rompe la suite.
-    assert cliente.get("/admin").status_code == 401
-    assert cliente.get("/admin", auth=("intruso", "clave_falsa")).status_code == 401
+    assert cliente.get("/api/admin/casos").status_code == 401
+    assert cliente.get("/api/admin/casos", auth=("intruso", "clave_falsa")).status_code == 401
     credenciales = (config.USUARIO_ADMIN, config.CLAVE_ADMIN)
-    assert cliente.get("/admin", auth=credenciales).status_code == 200
+    assert cliente.get("/api/admin/casos", auth=credenciales).status_code == 200
 
 
 def test_48_no_se_puede_inyectar_una_meta_prolog(cliente):
@@ -255,3 +255,63 @@ def test_49_el_panel_administrativo_valida_los_minimos_de_cada_caso(cliente):
     for caso in CASOS:
         datos = cliente.get(f"/api/casos/{caso}/minimos").json()
         assert datos["cumple"] is True
+
+
+# ---------------------------------------------------------------------------
+# Opcionales 6, 7, 8
+# ---------------------------------------------------------------------------
+
+def test_50_el_grafo_de_relaciones_incluye_sospechosos_y_evidencias(cliente):
+    """Opcional 6: Grafo de relaciones entre sospechosos y evidencias."""
+    sesion = _abrir(cliente, "caso1")
+    cliente.post(f"/api/sesiones/{sesion}/lugares/deposito")
+
+    datos = cliente.get(f"/api/sesiones/{sesion}/grafo").json()
+    assert datos["ok"] is True
+    grafo = datos["grafo"]
+
+    tipos_nodos = {n["tipo"] for n in grafo["nodos"]}
+    assert "sospechoso" in tipos_nodos
+    assert "evidencia" in tipos_nodos
+
+    # Verificar que los enlaces vinculan personas o evidencias
+    assert len(grafo["enlaces"]) >= 1
+    tipos_enlaces = {e["tipo"] for e in grafo["enlaces"]}
+    assert any(t in tipos_enlaces for t in ("evidencia_vinculo", "relacion_personal"))
+
+
+def test_51_la_vista_imprimible_del_informe_devuelve_html_completo(cliente):
+    """Opcional 7: Exportación del informe en formato PDF / HTML imprimible."""
+    sesion = _abrir(cliente, "caso1")
+    cliente.post(f"/api/sesiones/{sesion}/acusar", json={"acusado": "marco"})
+
+    respuesta = cliente.get(f"/api/sesiones/{sesion}/informe/imprimir")
+    assert respuesta.status_code == 200
+    assert "text/html" in respuesta.headers.get("content-type", "")
+    assert "Informe Final" in respuesta.text
+    assert "Ranking de Sospecha" in respuesta.text
+    assert "Cadena Deductiva" in respuesta.text
+    assert "window.print()" in respuesta.text
+
+
+def test_52_el_historial_calcula_estadisticas_y_permite_filtrar(cliente):
+    """Opcional 8: Historial de investigaciones resueltas con filtros y estadísticas."""
+    sesion = _abrir(cliente, "caso1")
+    cliente.post(f"/api/sesiones/{sesion}/acusar", json={"acusado": "marco"})
+
+    historial = cliente.get("/api/historial").json()
+    assert historial["ok"] is True
+    assert len(historial["sesiones"]) >= 1
+
+    stats = historial["estadisticas"]
+    assert "total" in stats
+    assert "resueltas" in stats
+    assert "tasa_exito" in stats
+
+    # Filtro por caso
+    filtrado_caso = cliente.get("/api/historial?caso=caso1").json()
+    assert all(s["caso"] == "caso1" for s in filtrado_caso["sesiones"])
+
+    # Filtro por veredicto
+    filtrado_veredicto = cliente.get("/api/historial?veredicto=correcto").json()
+    assert all(s["veredicto"] == "correcto" for s in filtrado_veredicto["sesiones"])

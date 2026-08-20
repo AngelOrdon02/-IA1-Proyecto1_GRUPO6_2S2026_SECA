@@ -3,7 +3,7 @@
 > Estado verificado el **16/08/2026** sobre la rama `feature/202300512`.
 > Entrega: **28/08/2026** · Calificación: **29/08/2026**.
 >
-> Todo lo marcado ✅ fue comprobado ejecutando el código, no leyendo la
+> Todo lo marcado [OK] fue comprobado ejecutando el código, no leyendo la
 > documentación. Varios documentos del repo (`README.md`, `pruebas/Plan_Trabajo_*.md`)
 > afirman cosas que **no** están en el repositorio; esas discrepancias están
 > señaladas abajo.
@@ -14,11 +14,11 @@
 
 | Rubro de la rúbrica | Pts | Estado real |
 |---|---|---|
-| 2.1 Motor de Inferencia en Prolog | 20 | ✅ **Completo** — 3 casos válidos, 16 predicados, constructos comprobados |
-| 2.2 Desarrollo e Integración en Python | 20 | 🟡 **Funciona** — API + admin OK; **4 pruebas rotas** tras migrar a React |
-| 2.3 Contenedorización y Despliegue | 20 | 🟡 **Imagen verificada 16/08**, falta desplegar en la nube |
-| 1.2 Gestión de Repositorio y CI/CD | 30 | 🔴 **En riesgo** — pipeline **pospuesto por decisión del equipo**, `main` vacío, commits de una sola persona |
-| 1.1 Documentación | 10 | 🟡 **A medias** — 5 docs escritos, faltan capturas y diagrama de flujo |
+| 2.1 Motor de Inferencia en Prolog | 20 | [OK] **Completo** — 3 casos válidos, 16 predicados, constructos comprobados |
+| 2.2 Desarrollo e Integración en Python | 20 | [En progreso] **Funciona** — API + admin OK; **4 pruebas rotas** tras migrar a React |
+| 2.3 Contenedorización y Despliegue | 20 | [En progreso] **Imagen verificada 16/08**, falta desplegar en la nube |
+| 1.2 Gestión de Repositorio y CI/CD | 30 | [Critico] **En riesgo** — pipeline **pospuesto por decisión del equipo**, `main` vacío, commits de una sola persona |
+| 1.1 Documentación | 10 | [En progreso] **A medias** — 5 docs escritos, faltan capturas y diagrama de flujo |
 
 **Los 30 puntos de repositorio/CI son hoy el mayor riesgo del proyecto**, no el
 motor de inferencia.
@@ -60,38 +60,38 @@ sirviéndose, `/api/admin` pidiendo autenticación, y una partida completa
 
 ## 1. Verificado que YA funciona (no tocar)
 
-- ✅ Los 3 casos cumplen los mínimos exactos: `conteo(4,10,5,5,10)` en `caso1`,
+- [OK] Los 3 casos cumplen los mínimos exactos: `conteo(4,10,5,5,10)` en `caso1`,
   `caso2` y `caso3`; `cumple_minimos/1` da verdadero en los tres.
-- ✅ Cada caso tiene un culpable único deducible:
+- [OK] Cada caso tiene un culpable único deducible:
   `caso1 → marco`, `caso2 → quim_sofia`, `caso3 → lic_vera`.
-- ✅ Los 16 predicados de inferencia exigidos existen y responden
+- [OK] Los 16 predicados de inferencia exigidos existen y responden
   (`tiene_acceso`, `tuvo_oportunidad`, `tiene_medios`, `coartada_valida`,
   `coartada_invalida`, `contradice_*`, `informacion_falsa`, `relacion_relevante`,
   `nivel_sospecha`, `posible_complice`, `principal_sospechoso`, `responsable`,
   `explicacion`, `explicacion_conclusion`).
-- ✅ Constructos obligatorios presentes: cortes (9 usos), negación `\+` (24),
+- [OK] Constructos obligatorios presentes: cortes (9 usos), negación `\+` (24),
   `findall`/listas (33), recursividad, unificación.
-- ✅ **82 de 86 pruebas pasando** (`pytest tests/ -q`); el SMART pedía ≥10. Las 4
+- [OK] **82 de 86 pruebas pasando** (`pytest tests/ -q`); el SMART pedía ≥10. Las 4
   rotas son de la interfaz vieja, ver sección 0.bis.
-- ✅ El módulo de investigación funciona completo, con bitácora por acción.
-- ✅ Módulo administrativo con edición de la KB, validación sintáctica, exportar,
+- [OK] El módulo de investigación funciona completo, con bitácora por acción.
+- [OK] Módulo administrativo con edición de la KB, validación sintáctica, exportar,
   eliminar con respaldo e historial de sesiones.
-- ✅ `Dockerfile` multi-stage (Node para el frontend, Python + SWI-Prolog para el
+- [OK] `Dockerfile` multi-stage (Node para el frontend, Python + SWI-Prolog para el
   backend) y `docker-compose.yml`: un worker, healthcheck, usuario sin
   privilegios y volumen persistente. **Build y arranque comprobados el 16/08.**
-- ✅ Puente PySwip con fallback a subproceso.
+- [OK] Puente PySwip con fallback a subproceso.
 
 ---
 
 ## 2. OBLIGATORIO pendiente (bloquea puntos)
 
-### 2.1 CI/CD — GitHub Actions · 🔴 CRÍTICO · ⏸️ pospuesto a propósito
+### 2.1 CI/CD — GitHub Actions · [Critico] CRÍTICO · [Pospuesto] pospuesto a propósito
 > Decisión del equipo (16/08): primero dejar la contenerización funcionando.
 > Retomar en cuanto el build esté estable — son 30 puntos de la rúbrica y el
 > pipeline necesita margen para ponerse en verde antes del 28/08.
 
 - [ ] **Crear `.github/workflows/ci.yml`. Hoy no existe en ninguna rama.**
-      El `README.md` y el plan de trabajo lo dan por hecho ("CI/CD Configurado ✅"),
+      El `README.md` y el plan de trabajo lo dan por hecho ("CI/CD Configurado [OK]"),
       pero `git log --all -- .github` no devuelve nada.
 - [ ] Jobs mínimos: (1) instalar SWI-Prolog + dependencias y correr `pytest`,
       (2) validar sintaxis de la KB (`swipl -g "consult('prolog/logic_detective.pl')"`),
@@ -99,7 +99,7 @@ sirviéndose, `/api/admin` pidiendo autenticación, y una partida completa
 - [ ] Que el pipeline dispare en `push` y `pull_request` sobre `main` y `develop`.
 - [ ] Añadir el badge de estado al `README.md`.
 
-### 2.2 Higiene del repositorio · 🟡 (parcialmente resuelto el 16/08)
+### 2.2 Higiene del repositorio · [En progreso] (parcialmente resuelto el 16/08)
 - [x] **`.gitignore` creado.** Cubre secretos (`.env`, `*.pem`, `*.key`,
       `service-account*.json`), `__pycache__`, entornos virtuales, caché de
       pytest, `datos/*.db` y `datos/respaldos/`.
@@ -116,7 +116,7 @@ sirviéndose, `/api/admin` pidiendo autenticación, y una partida completa
 - [ ] Decidir si `docs/enunciado/` (el enunciado del curso) se versiona o se
       ignora. Hoy está sin seguimiento.
 
-### 2.3 Commits identificables por integrante · 🔴 CRÍTICO (30 pts)
+### 2.3 Commits identificables por integrante · [Critico] CRÍTICO (30 pts)
 - [ ] Repartir el trabajo restante de esta lista entre los 5 integrantes para que
       cada uno tenga commits propios y descriptivos. La rúbrica exige "aportes de
       los integrantes mediante commits identificables"; hoy la autoría está
@@ -124,7 +124,7 @@ sirviéndose, `/api/admin` pidiendo autenticación, y una partida completa
 - [ ] Mantener la convención ya usada: `feat(<carnet>): ...`, `docs(<carnet>): ...`,
       `test(<carnet>): ...`.
 
-### 2.4 Despliegue en la nube (GCP/AWS) · 🔴 20 pts
+### 2.4 Despliegue en la nube (GCP/AWS) · [Critico] 20 pts
 - [ ] Crear la VM y desplegar con `docker compose up -d`. Los pasos ya están
       escritos en `docs/despliegue.md`, solo falta **ejecutarlos**.
 - [ ] **Cambiar `LD_ADMIN_USER` / `LD_ADMIN_PASS`** antes de exponer el puerto
@@ -133,7 +133,7 @@ sirviéndose, `/api/admin` pidiendo autenticación, y una partida completa
 - [ ] Anotar la **IP pública** en `README.md` y en `docs/despliegue.md`, y adjuntar
       capturas del sistema corriendo en la nube.
 
-### 2.5 Documentación · 🟡 10 pts + requisito de admisión
+### 2.5 Documentación · [En progreso] 10 pts + requisito de admisión
 - [ ] **Capturas de pantalla en `docs/manual_usuario.md`.** El propio documento
       admite en su línea 4 que faltan; el enunciado las exige explícitamente.
       Mínimo: inicio, panel, interrogatorio, evidencias, contradicciones,
@@ -148,7 +148,7 @@ sirviéndose, `/api/admin` pidiendo autenticación, y una partida completa
       esperada. Refuerza directamente el rubro 2.1.
 - [ ] Corregir el bloque **"Estado"** del `README.md`: hoy declara CI/CD como
       configurado, lo cual es falso. Igual en `pruebas/Plan_Trabajo_Logic_Detective.md`
-      (línea ~400, "GitHub Actions (3 jobs) ✅").
+      (línea ~400, "GitHub Actions (3 jobs) [OK]").
 
 ### 2.6 Informe de participación grupal · requisito de admisión
 - [ ] El coordinador debe entregar la tabla de actividades y **porcentajes que
@@ -171,16 +171,16 @@ Estado de los 10 opcionales listados en el enunciado:
 
 | # | Funcionalidad | Estado | Esfuerzo |
 |---|---|---|---|
-| 1 | Selección aleatoria del caso al iniciar | ❌ No implementado | Bajo |
-| 2 | Puntuación por cantidad de consultas | ❌ No implementado | Bajo |
-| 3 | Temporizador para resolver el caso | ❌ No implementado | Bajo |
-| 4 | Niveles de dificultad | ✅ **Hecho** (`facil`/`medio`/`dificil`) | — |
-| 5 | Sistema de pistas | ✅ **Hecho** (`pista/3`, 5 por sesión) | — |
-| 6 | Visualización gráfica sospechosos–evidencias | ❌ No implementado | Medio |
-| 7 | Exportación del informe en PDF | ❌ No implementado | Bajo |
-| 8 | Historial de investigaciones resueltas | 🟡 **Parcial** | Bajo |
-| 9 | Generador de casos desde JSON/CSV | ❌ No implementado | Alto |
-| 10 | Modo multicaso con estadísticas | ❌ No implementado | Medio |
+| 1 | Selección aleatoria del caso al iniciar | [No] No implementado | Bajo |
+| 2 | Puntuación por cantidad de consultas | [No] No implementado | Bajo |
+| 3 | Temporizador para resolver el caso | [No] No implementado | Bajo |
+| 4 | Niveles de dificultad | [OK] **Hecho** (`facil`/`medio`/`dificil`) | — |
+| 5 | Sistema de pistas | [OK] **Hecho** (`pista/3`, 5 por sesión) | — |
+| 6 | Visualización gráfica sospechosos–evidencias | [OK] **Hecho** (`GET /api/sesiones/{s}/grafo`, component SVG interactivo) | — |
+| 7 | Exportación del informe en PDF | [OK] **Hecho** (Estilos `@media print`, `window.print()` y `/informe/imprimir`) | — |
+| 8 | Historial de investigaciones resueltas | [OK] **Hecho** (`/historial`, filtros por caso/veredicto y estadísticas) | — |
+| 9 | Generador de casos desde JSON/CSV | [No] No implementado | Alto |
+| 10 | Modo multicaso con estadísticas | [No] No implementado | Medio |
 
 ### Detalle y ruta de implementación
 
@@ -194,15 +194,16 @@ Estado de los 10 opcionales listados en el enunciado:
 - [ ] **(3) Temporizador** — `sesiones.iniciada` y `sesiones.cerrada` ya se guardan
       en ISO 8601; solo falta calcular la diferencia y mostrarla, más un contador
       en vivo en `panel.html`.
-- [ ] **(6) Grafo de relaciones** — SVG inline generado desde
-      `vista_relacion/4` y `vista_evidencia_persona/4` (ambas ya existen en
-      `prolog/core/vistas.pl`). Sin librerías externas.
-- [ ] **(7) PDF del informe** — la vía barata: CSS `@media print` sobre
-      `informe.html` + botón "Imprimir / Guardar como PDF". La vía completa:
-      `weasyprint` en `requirements.txt` y una ruta `/investigacion/{sesion}/informe.pdf`.
-- [ ] **(8) Historial** — ya se listan las sesiones en `inicio.html` (8 últimas) y
-      en `/admin`. Falta una vista dedicada `/historial` con filtro por caso y por
-      veredicto (`correcto`/`incorrecto`).
+- [x] **(6) Grafo de relaciones** — Grafo interactivo SVG (`frontend/src/organisms/GrafoRelaciones.tsx`)
+      y endpoint `GET /api/sesiones/{sesion}/grafo`. Visualiza sospechosos (con niveles de sospecha),
+      evidencias descubiertas, vínculos físicos y relaciones interpersonales. Integrado en el panel
+      de expediente (pestaña "Grafo") y en el informe final.
+- [x] **(7) PDF del informe** — Botón de exportación e impresión (`window.print()`), estilos
+      dedicados `@media print` en `index.css` y ruta de vista imprimible
+      `GET /api/sesiones/{sesion}/informe/imprimir`.
+- [x] **(8) Historial** — Vista dedicada `/historial` (`frontend/src/pages/HistorialPage.tsx`)
+      con métricas globales (tasa de éxito, promedio de pistas), filtros por caso, estado y veredicto,
+      búsqueda en tiempo real y enlaces a informes/continuación. Endpoint `GET /api/historial`.
 - [ ] **(9) Generador desde JSON/CSV** — el admin hoy crea casos desde una
       plantilla `.pl` (`app/services/admin.py:_plantilla`). Habría que añadir un
       importador que traduzca JSON/CSV a hechos Prolog y valide con
@@ -258,19 +259,19 @@ Revisión hecha el 16/08/2026 sobre todo el código de la aplicación.
 
 ### 6.1 Lo que ya estaba bien resuelto
 
-- ✅ **Inyección de metas Prolog**: todo identificador que llega del usuario pasa
+- [OK] **Inyección de metas Prolog**: todo identificador que llega del usuario pasa
   por `_ATOMO` en `app/services/investigacion.py:30` antes de formar parte de una
   consulta. Hay una prueba que lo verifica (`test_48`).
-- ✅ **Path traversal en el módulo administrativo**: `_archivo_de()` y
+- [OK] **Path traversal en el módulo administrativo**: `_archivo_de()` y
   `guardar_fuente()` normalizan con `Path(archivo).name` y comprueban que el
   padre resuelto sea `prolog/casos`.
-- ✅ **Comparación de credenciales** con `secrets.compare_digest`, sin fuga por
+- [OK] **Comparación de credenciales** con `secrets.compare_digest`, sin fuga por
   tiempo de respuesta.
-- ✅ **Contenedor sin privilegios**: el `Dockerfile` crea y usa el usuario
+- [OK] **Contenedor sin privilegios**: el `Dockerfile` crea y usa el usuario
   `detective`, no `root`.
-- ✅ **Respaldo antes de sobrescribir** cualquier archivo de caso.
+- [OK] **Respaldo antes de sobrescribir** cualquier archivo de caso.
 
-### 6.2 🔴 Riesgo principal: `/admin` es ejecución de código en el servidor
+### 6.2 [Critico] Riesgo principal: `/admin` es ejecución de código en el servidor
 
 El panel administrativo permite **escribir código Prolog arbitrario**
 (`POST /admin/fuente/{archivo}`), y ese contenido se carga con `consult`, tanto

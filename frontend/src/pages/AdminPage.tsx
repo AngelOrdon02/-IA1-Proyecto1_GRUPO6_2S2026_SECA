@@ -34,6 +34,7 @@ export default function AdminPage() {
   const [sesiones, setSesiones] = useState<AdminSesion[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCrear, setShowCrear] = useState(false);
+  const [errorMensaje, setErrorMensaje] = useState<string>("");
   const [nuevoCaso, setNuevoCaso] = useState({
     caso: "",
     titulo: "",
@@ -52,6 +53,7 @@ export default function AdminPage() {
   async function loadData() {
     try {
       setLoading(true);
+      setErrorMensaje("");
       const [casosRes, sesionesRes] = await Promise.all([
         adminApi.casos(),
         adminApi.sesiones(),
@@ -67,6 +69,7 @@ export default function AdminPage() {
 
   async function handleCrear() {
     try {
+      setErrorMensaje("");
       await adminApi.crearCaso(nuevoCaso);
       setShowCrear(false);
       setNuevoCaso({
@@ -77,36 +80,39 @@ export default function AdminPage() {
       });
       loadData();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Error");
+      setErrorMensaje(e instanceof Error ? e.message : "Error al crear caso");
     }
   }
 
   async function handleEliminar(archivo: string) {
     if (!confirm(`¿Eliminar ${archivo}? Se guardará un respaldo.`)) return;
     try {
+      setErrorMensaje("");
       await adminApi.eliminarCaso(archivo);
       loadData();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Error");
+      setErrorMensaje(e instanceof Error ? e.message : "Error al eliminar caso");
     }
   }
 
   async function handleRecargar() {
     try {
+      setErrorMensaje("");
       await adminApi.recargar();
       loadData();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Error");
+      setErrorMensaje(e instanceof Error ? e.message : "Error al recargar Prolog");
     }
   }
 
   async function handleLimpiar() {
     if (!confirm("¿Borrar todo el historial de sesiones?")) return;
     try {
+      setErrorMensaje("");
       await adminApi.limpiarSesiones();
       loadData();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Error");
+      setErrorMensaje(e instanceof Error ? e.message : "Error al limpiar sesiones");
     }
   }
 
@@ -154,6 +160,19 @@ export default function AdminPage() {
         </header>
 
         <div className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8">
+          {errorMensaje && (
+            <div className="mb-6 flex items-center justify-between rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger-soft">
+              <span>{errorMensaje}</span>
+              <button
+                type="button"
+                onClick={() => setErrorMensaje("")}
+                className="text-xs text-text-dim hover:text-text"
+              >
+                X
+              </button>
+            </div>
+          )}
+
           {/* Casos */}
           <section className="mb-12">
             <SectionHeading

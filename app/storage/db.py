@@ -112,6 +112,86 @@ def listar_sesiones(limite: int = 50) -> list[dict[str, Any]]:
     return [dict(f) for f in filas]
 
 
+def listar_sesiones_con_metricas(
+    caso: str | None = None,
+    veredicto: str | None = None,
+    estado: str | None = None,
+    limite: int = 100,
+) -> list[dict[str, Any]]:
+    """Lista sesiones con conteo de acciones y descubrimientos para el historial."""
+    query = """
+    SELECT 
+        s.id,
+        s.caso,
+        s.iniciada,
+        s.estado,
+        s.acusado,
+        s.veredicto,
+        s.pistas,
+        s.cerrada,
+        COUNT(DISTINCT b.id) AS total_acciones,
+        COUNT(DISTINCT d.tipo || ':' || d.ref) AS total_descubrimientos
+    FROM sesiones s
+    LEFT JOIN bitacora b ON b.sesion = s.id
+    LEFT JOIN descubrimientos d ON d.sesion = s.id
+    WHERE 1=1
+    """
+    params: list[Any] = []
+    if caso:
+        query += " AND s.caso = ?"
+        params.append(caso)
+    if veredicto:
+        query += " AND s.veredicto = ?"
+        params.append(veredicto)
+    if estado:
+        query += " AND s.estado = ?"
+        params.append(estado)
+    query += " GROUP BY s.id ORDER BY s.iniciada DESC LIMIT ?"
+    params.append(limite)
+
+    with conexion() as con:
+        filas = con.execute(query, params).fetchall()
+    return [dict(f) for f in filas]
+
+
+def estadisticas_globales() -> dict[str, Any]:
+    """Estadísticas globales de resolución de investigaciones."""
+    with conexion() as con:
+        total = con.execute("SELECT COUNT(*) FROM sesiones").fetchone()[0]
+        resueltas = con.execute(
+            "SELECT COUNT(*) FROM sesiones WHERE estado = 'resuelto' AND veredicto = 'correcto'"
+        ).fetchone()[0]
+        fallidas = con.execute(
+            "SELECT COUNT(*) FROM sesiones WHERE estado = 'fallido' OR veredicto = 'incorrecto'"
+        ).fetchone()[0]
+        en_curso = con.execute(
+            "SELECT COUNT(*) FROM sesiones WHERE estado = 'en_curso'"
+        ).fetchone()[0]
+        prom_pistas_row = con.execute("SELECT AVG(pistas) FROM sesiones").fetchone()[0]
+        prom_pistas = float(prom_pistas_row) if prom_pistas_row is not None else 0.0
+
+        por_caso = con.execute(
+            "SELECT caso, COUNT(*) as total, "
+            "SUM(CASE WHEN veredicto = 'correcto' THEN 1 ELSE 0 END) as correctas, "
+            "SUM(CASE WHEN veredicto = 'incorrecto' THEN 1 ELSE 0 END) as incorrectas, "
+            "SUM(CASE WHEN estado = 'en_curso' THEN 1 ELSE 0 END) as en_curso "
+            "FROM sesiones GROUP BY caso"
+        ).fetchall()
+
+    cerradas = resueltas + fallidas
+    tasa_exito = round((resueltas / cerradas * 100), 1) if cerradas > 0 else 0.0
+
+    return {
+        "total": total,
+        "resueltas": resueltas,
+        "fallidas": fallidas,
+        "en_curso": en_curso,
+        "tasa_exito": tasa_exito,
+        "promedio_pistas": round(prom_pistas, 1),
+        "por_caso": [dict(f) for f in por_caso],
+    }
+
+
 def estado_de_casos() -> dict[str, str]:
     """Estado mas reciente por caso, para la pantalla de inicio.
 

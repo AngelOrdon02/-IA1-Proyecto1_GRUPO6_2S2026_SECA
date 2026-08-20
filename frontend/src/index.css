@@ -244,4 +244,54 @@
       scroll-behavior: auto !important;
     }
   }
+
+  @media print {
+    @page {
+      size: A4 portrait;
+      margin: 1.2cm;
+    }
+
+    body {
+      background: #ffffff !important;
+      color: #0f172a !important;
+    }
+
+    .no-print,
+    .print-hidden {
+      display: none !important;
+    }
+
+    /* Forzar fondo blanco y texto oscuro en tarjetas para imprimir */
+    header,
+    section,
+    article,
+    .bg-surface,
+    .bg-surface-2,
+    .bg-surface-3,
+    .bg-glass,
+    .bg-bg {
+      background: #ffffff !important;
+      color: #0f172a !important;
+      box-shadow: none !important;
+    }
+
+    .text-text {
+      color: #0f172a !important;
+    }
+
+    .text-text-muted,
+    .text-text-dim {
+      color: #475569 !important;
+    }
+
+    .border-border,
+    .border-border-strong {
+      border-color: #cbd5e1 !important;
+    }
+
+    .avoid-break {
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+    }
+  }
 }

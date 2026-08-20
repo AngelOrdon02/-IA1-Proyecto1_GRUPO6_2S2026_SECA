@@ -63,7 +63,7 @@ tiene_acceso(Caso, Persona) :-
 están catalogados en `prolog/core/explicacion.pl:20-60` (`catalogo_regla/3`),
 cada uno con identificador estable y descripción legible.
 
-## 6. Listas ⭐
+## 6. Listas (Obligatorio)
 
 | Ubicación | Uso |
 |---|---|
@@ -76,7 +76,7 @@ cada uno con identificador estable y descripción legible.
 Los predicados de lista se implementan a mano en vez de usar los *builtins* de
 SWI precisamente para que el uso sea comprobable.
 
-## 7. Recursividad ⭐
+## 7. Recursividad (Obligatorio)
 
 | Predicado | Archivo:línea | Qué recorre |
 |---|---|---|
@@ -107,7 +107,7 @@ grafo de lugares de los tres casos tiene ciclos. Lo comprueba
 | `api_json.pl:47` | `read_term_from_atom/3` con `variable_names` recupera los nombres originales de las variables |
 | `sospecha.pl:~180` | `maximo_por_valor(Pares, Persona, PuntajeMaximo)` unifica el par ganador |
 
-## 9. Negación ⭐
+## 9. Negación (Obligatorio)
 
 Negación por fallo (`\+`): tiene éxito cuando Prolog **no logra demostrar** la
 meta. No afirma que sea falsa en el mundo, solo que no se deduce de la KB.
@@ -121,7 +121,7 @@ meta. No afirma que sea falsa en el mundo, solo que no se deduce de la KB.
 | `motor.pl:~170` | `testigo_confiable/2`: el testigo no debe ser sospechoso ni mentiroso |
 | `motor.pl:52` | `no_pertenece(Intermedio, Visitados)` corta los ciclos del grafo |
 
-## 10. Cortes (!) ⭐
+## 10. Cortes (!) (Obligatorio)
 
 | Archivo:línea | Tipo | Qué corta y por qué |
 |---|---|---|

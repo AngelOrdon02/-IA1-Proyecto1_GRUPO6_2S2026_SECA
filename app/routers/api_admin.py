@@ -17,17 +17,23 @@ from app.services import admin as servicio
 from app.storage import db
 
 router = APIRouter(prefix="/api/admin", tags=["api-admin"])
-seguridad = HTTPBasic()
+seguridad = HTTPBasic(auto_error=False)
 
 
-def verificar(credenciales: Annotated[HTTPBasicCredentials, Depends(seguridad)]) -> str:
+def verificar(
+    credenciales: Annotated[HTTPBasicCredentials | None, Depends(seguridad)],
+) -> str:
+    if not credenciales:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenciales requeridas",
+        )
     usuario_ok = secrets.compare_digest(credenciales.username, config.USUARIO_ADMIN)
     clave_ok = secrets.compare_digest(credenciales.password, config.CLAVE_ADMIN)
     if not (usuario_ok and clave_ok):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales invalidas",
-            headers={"WWW-Authenticate": "Basic"},
         )
     return credenciales.username
 

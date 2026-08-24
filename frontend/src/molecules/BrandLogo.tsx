@@ -18,17 +18,17 @@ export default function BrandLogo({
     <div className={cn("flex items-center gap-3", className)}>
       <div
         className={cn(
-          "flex shrink-0 items-center justify-center rounded-xl border border-accent/25 bg-accent/12 text-accent",
-          isMd ? "h-12 w-12" : "h-10 w-10",
+          "flex shrink-0 items-center justify-center rounded-sm border border-accent/20 bg-accent/10 text-accent",
+          isMd ? "h-10 w-10" : "h-8 w-8",
         )}
       >
-        <Fingerprint className={isMd ? "h-6 w-6" : "h-5 w-5"} />
+        <Fingerprint className={isMd ? "h-5 w-5" : "h-4 w-4"} strokeWidth={1.75} />
       </div>
       <div className="min-w-0">
         <p
           className={cn(
-            "truncate font-semibold tracking-tight text-text",
-            isMd ? "text-lg" : "text-base",
+            "truncate font-medium tracking-tight text-text",
+            isMd ? "text-base" : "text-sm",
           )}
         >
           Logic Detective

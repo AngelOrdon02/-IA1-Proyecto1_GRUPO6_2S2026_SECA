@@ -5,13 +5,86 @@ import {
   generateId,
   type ChatMessage,
   type ChatState,
+  type Pensamiento,
 } from "./chatTypes.ts";
 
 const initialState: ChatState = {
   messages: [],
   isLoading: false,
+  thinking: null,
   error: null,
 };
+
+/**
+ * Duracion minima de la fase "pensando", en ms, mas un margen aleatorio.
+ *
+ * El backend resuelve casi todas las consultas en decenas de milisegundos:
+ * sin este suelo, la respuesta aparecia de golpe junto a la accion y no se
+ * leia como una deduccion sino como un `console.log`. Reteniendo el
+ * resultado poco menos de un segundo, el indicador de razonamiento llega a
+ * verse y el hilo adquiere ritmo de conversacion. El jitter evita que la
+ * espera se sienta como una barra de progreso falsa siempre igual.
+ *
+ * No es un `setTimeout` antes de la peticion: la peticion sale de inmediato
+ * y solo se retiene la *presentacion*, asi que en una consulta lenta el
+ * retardo no suma nada.
+ */
+const PENSAR_MS = 850;
+const PENSAR_JITTER_MS = 550;
+
+/**
+ * Presentacion de la espera por accion: la animacion del orbe se elige para
+ * que coincida con el verbo — se *escucha* a un sospechoso, se *busca* en un
+ * lugar, se *conectan* pistas — y las frases se encadenan mientras dura.
+ */
+const PENSAMIENTOS: Record<string, Pensamiento> = {
+  interrogar: {
+    orbe: "listening",
+    frases: [
+      "Registrando la declaracion",
+      "Contrastando con las coartadas conocidas",
+    ],
+  },
+  lugar: {
+    orbe: "searching",
+    frases: ["Recorriendo el lugar", "Levantando evidencias del sitio"],
+  },
+  evidencia: {
+    orbe: "connecting",
+    frases: ["Analizando la evidencia", "Buscando a quien la vincula"],
+  },
+  pista: {
+    orbe: "weaving",
+    frases: ["Revisando el expediente", "Buscando un hilo del que tirar"],
+  },
+  acusar: {
+    orbe: "solving",
+    frases: [
+      "Ejecutando la deduccion",
+      "Contrastando tu acusacion con el responsable",
+    ],
+  },
+};
+
+/**
+ * Resuelve `tarea` sin dejar que la interfaz responda antes de `PENSAR_MS`.
+ *
+ * El error se retiene igual que el exito: si un fallo apareciera al instante
+ * y una respuesta valida tardara un segundo, el error se leeria como un
+ * problema de la interfaz y no del caso.
+ */
+async function pensando<T>(tarea: Promise<T>): Promise<T> {
+  const espera = PENSAR_MS + Math.random() * PENSAR_JITTER_MS;
+  const [resultado] = await Promise.all([
+    tarea.then(
+      (valor) => ({ ok: true as const, valor }),
+      (error: unknown) => ({ ok: false as const, error }),
+    ),
+    new Promise((resolve) => setTimeout(resolve, espera)),
+  ]);
+  if (!resultado.ok) throw resultado.error;
+  return resultado.valor;
+}
 
 export function useChat(sesionId: string) {
   const [state, dispatch] = useReducer(chatReducer, initialState);
@@ -20,8 +93,8 @@ export function useChat(sesionId: string) {
     dispatch({ type: "ADD_MESSAGE", message });
   }, []);
 
-  const setLoading = useCallback((loading: boolean) => {
-    dispatch({ type: "SET_LOADING", loading });
+  const setLoading = useCallback((loading: boolean, thinking?: Pensamiento) => {
+    dispatch({ type: "SET_LOADING", loading, thinking });
   }, []);
 
   const setError = useCallback((error: string | null) => {
@@ -46,10 +119,10 @@ export function useChat(sesionId: string) {
         target: personaNombre,
       };
       addMessage(userMsg);
-      setLoading(true);
+      setLoading(true, PENSAMIENTOS.interrogar);
 
       try {
-        const res = await api.interrogar(sesionId, personaId);
+        const res = await pensando(api.interrogar(sesionId, personaId));
         const msg: ChatMessage = {
           id: generateId(),
           type: "declaration",
@@ -78,10 +151,10 @@ export function useChat(sesionId: string) {
         target: lugarNombre,
       };
       addMessage(userMsg);
-      setLoading(true);
+      setLoading(true, PENSAMIENTOS.lugar);
 
       try {
-        const res = await api.investigarLugar(sesionId, lugarId);
+        const res = await pensando(api.investigarLugar(sesionId, lugarId));
         const placeMsg: ChatMessage = {
           id: generateId(),
           type: "place_investigated",
@@ -127,10 +200,12 @@ export function useChat(sesionId: string) {
         target: etiqueta ?? evidenciaId,
       };
       addMessage(userMsg);
-      setLoading(true);
+      setLoading(true, PENSAMIENTOS.evidencia);
 
       try {
-        const res = await api.examinarEvidencia(sesionId, evidenciaId);
+        const res = await pensando(
+          api.examinarEvidencia(sesionId, evidenciaId),
+        );
         const msg: ChatMessage = {
           id: generateId(),
           type: "evidence_examined",
@@ -165,10 +240,10 @@ export function useChat(sesionId: string) {
       target: "",
     };
     addMessage(userMsg);
-    setLoading(true);
+    setLoading(true, PENSAMIENTOS.pista);
 
     try {
-      const res = await api.pista(sesionId);
+      const res = await pensando(api.pista(sesionId));
       const msg: ChatMessage = {
         id: generateId(),
         type: "hint",
@@ -193,10 +268,10 @@ export function useChat(sesionId: string) {
         target: etiqueta ?? acusadoId,
       };
       addMessage(userMsg);
-      setLoading(true);
+      setLoading(true, PENSAMIENTOS.acusar);
 
       try {
-        const res = await api.acusar(sesionId, acusadoId);
+        const res = await pensando(api.acusar(sesionId, acusadoId));
         const msg: ChatMessage = {
           id: generateId(),
           type: "verdict",
@@ -216,6 +291,7 @@ export function useChat(sesionId: string) {
   return {
     messages: state.messages,
     isLoading: state.isLoading,
+    thinking: state.thinking,
     error: state.error,
     addMessage,
     setLoading,

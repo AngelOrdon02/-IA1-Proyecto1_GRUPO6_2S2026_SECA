@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   ZoomIn,
   ZoomOut,
   RotateCcw,
-  Maximize2,
-  Minimize2,
   Link as LinkIcon,
   HelpCircle,
 } from "lucide-react";
-import { Badge, Spinner, Button, MonoText, EmptyState } from "@/atoms";
+import { Badge, Spinner, Button, MonoText, EmptyState, MorphIcon } from "@/atoms";
+import { ICON } from "@/lib/icons.ts";
+import { cn } from "@/lib/utils.ts";
 import { api } from "@/api/client.ts";
 import type { GrafoData, GrafoNodo } from "@/api/types.ts";
 import { CATEGORIA_LABELS } from "@/lib/constants.ts";
@@ -180,11 +181,31 @@ export default function GrafoRelaciones({
     setZoom((z) => Math.max(0.4, Math.min(2.5, z + delta)));
   };
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setZoom(1);
     setPan({ x: 0, y: 0 });
     setSelectedNodeId(null);
-  };
+  }, []);
+
+  /* El modo expandido es un modal real, no un `fixed` dentro del panel: el
+     `backdrop-filter` del panel del expediente crea un bloque contenedor, asi
+     que un `position: fixed` descendiente se anclaba al panel y la "pantalla
+     completa" ocupaba una columna de 400px. Se monta con un portal en <body>,
+     con Escape para salir y el scroll del documento bloqueado mientras dura. */
+  useEffect(() => {
+    if (!fullscreen) return;
+    handleReset();
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setFullscreen(false);
+    }
+    document.addEventListener("keydown", onKey);
+    const overflowPrevio = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = overflowPrevio;
+    };
+  }, [fullscreen, handleReset]);
 
   if (loading) {
     return (
@@ -212,13 +233,12 @@ export default function GrafoRelaciones({
   const width = compact ? 500 : 800;
   const height = compact ? 400 : 600;
 
-  return (
+  const tarjeta = (
     <div
-      className={`relative flex flex-col overflow-hidden rounded-xl border border-border bg-surface-2 ${
-        fullscreen
-          ? "fixed inset-4 z-50 flex flex-col bg-bg shadow-2xl border-accent/40"
-          : className
-      }`}
+      className={cn(
+        "relative flex min-h-0 flex-col overflow-hidden rounded-md border border-border bg-surface-2",
+        fullscreen ? "h-full w-full shadow-overlay" : className,
+      )}
     >
       {/* Barra de Controles Superior */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-surface px-4 py-2.5">
@@ -296,17 +316,27 @@ export default function GrafoRelaciones({
             >
               <RotateCcw className="h-4 w-4" />
             </button>
+            {fullscreen && (
+              <kbd className="ml-1 rounded-xs border border-border bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] text-text-dim">
+                Esc
+              </kbd>
+            )}
             <button
               type="button"
               onClick={() => setFullscreen(!fullscreen)}
-              title={fullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
-              className="rounded-lg p-1.5 text-text-dim hover:bg-surface-hover hover:text-text"
+              aria-expanded={fullscreen}
+              title={
+                fullscreen
+                  ? "Salir de pantalla completa (Esc)"
+                  : "Ver en pantalla completa"
+              }
+              className="rounded-sm p-1.5 text-text-dim hover:bg-surface-hover hover:text-text"
             >
-              {fullscreen ? (
-                <Minimize2 className="h-4 w-4 text-accent" />
-              ) : (
-                <Maximize2 className="h-4 w-4" />
-              )}
+              <MorphIcon
+                icon={fullscreen ? ICON.minimize : ICON.maximize}
+                size={16}
+                className={fullscreen ? "text-accent" : undefined}
+              />
             </button>
           </div>
         </div>
@@ -316,7 +346,7 @@ export default function GrafoRelaciones({
       <div
         ref={containerRef}
         className="relative flex-1 cursor-grab overflow-hidden active:cursor-grabbing"
-        style={{ minHeight: compact ? "320px" : "460px" }}
+        style={{ minHeight: fullscreen ? 0 : compact ? "320px" : "460px" }}
       >
         <svg
           ref={svgRef}
@@ -591,7 +621,7 @@ export default function GrafoRelaciones({
 
         {/* Tarjeta de Inspección del Nodo Seleccionado */}
         {selectedNode && (
-          <div className="absolute right-3 top-3 w-72 animate-fade-up rounded-xl border border-border bg-surface/95 p-4 shadow-xl backdrop-blur-md">
+          <div className="absolute right-3 top-3 w-72 animate-fade-up rounded-md border border-border bg-surface/95 p-4 shadow-overlay backdrop-blur-md">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <span className="text-[10px] uppercase font-mono tracking-wider text-text-dim">
@@ -675,5 +705,24 @@ export default function GrafoRelaciones({
         )}
       </div>
     </div>
+  );
+
+  if (!fullscreen) return tarjeta;
+
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Red de vínculos y evidencias en pantalla completa"
+      className="fixed inset-0 z-[60] flex animate-fade-in flex-col bg-bg/85 p-3 backdrop-blur-sm sm:p-6"
+      /* Solo cierra al pulsar el fondo, no al soltar un arrastre del grafo
+         que termine fuera de la tarjeta. */
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) setFullscreen(false);
+      }}
+    >
+      {tarjeta}
+    </div>,
+    document.body,
   );
 }

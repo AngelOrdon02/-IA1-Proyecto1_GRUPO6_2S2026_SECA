@@ -31,8 +31,8 @@ export default function Select({
         <select
           id={selectId}
           className={cn(
-            "h-10 w-full appearance-none rounded-lg border border-border bg-surface-2 pl-3 pr-9 text-sm text-text transition-colors",
-            "hover:border-border-strong focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30 focus-visible:outline-none",
+            "h-9 w-full appearance-none rounded-md border border-border bg-surface-2 pl-3 pr-9 text-sm text-text transition-colors",
+            "hover:border-border-strong focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/40 focus-visible:outline-none",
             className,
           )}
           {...props}
@@ -47,7 +47,10 @@ export default function Select({
             </option>
           ))}
         </select>
-        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-dim" />
+        <ChevronDown
+          className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-dim"
+          strokeWidth={1.75}
+        />
       </div>
     </div>
   );

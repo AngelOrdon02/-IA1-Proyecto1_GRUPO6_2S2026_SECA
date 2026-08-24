@@ -52,7 +52,7 @@ export default function ActionPopover({
       role="dialog"
       aria-label={title}
       className={cn(
-        "absolute bottom-full z-40 mb-3 w-80 animate-scale-in rounded-xl border border-border-strong bg-surface-2 shadow-2xl shadow-black/60",
+        "absolute bottom-full z-40 mb-2 w-80 animate-scale-in rounded-md border border-border-strong bg-surface-2 shadow-overlay",
         align === "right" ? "right-0" : "left-0",
         /* En movil se ancla al viewport: anclado al chip se salia por la
            derecha cuando el chip no era el primero de su fila. */
@@ -62,14 +62,14 @@ export default function ActionPopover({
     >
       <div className="flex items-start justify-between gap-2 border-b border-border px-4 py-3">
         <div className="min-w-0">
-          <h4 className="text-sm font-semibold text-text">{title}</h4>
+          <h4 className="text-sm font-medium text-text">{title}</h4>
           {hint && <p className="mt-0.5 text-xs text-text-dim">{hint}</p>}
         </div>
         <button
           type="button"
           onClick={onClose}
           aria-label="Cerrar"
-          className="-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 text-text-dim transition-colors hover:bg-surface-hover hover:text-text"
+          className="-mr-1 -mt-1 shrink-0 rounded-sm p-1.5 text-text-dim transition-colors hover:bg-surface-hover hover:text-text"
         >
           <X className="h-4 w-4" />
         </button>

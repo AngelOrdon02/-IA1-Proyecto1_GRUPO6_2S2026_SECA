@@ -190,9 +190,9 @@ prolog/
 │   ├── vistas.pl             # Redacción en español para la interfaz
 │   └── api_json.pl           # Serialización JSON (frontera con Python)
 └── casos/
-    ├── caso1_museo.pl        # Fácil
-    ├── caso2_hospital.pl     # Medio
-    └── caso3_corporativo.pl  # Difícil
+    ├── caso1_louvre.pl       # Fácil
+    ├── caso2_whitechapel.pl  # Medio
+    └── caso3_rasputin.pl     # Difícil
 
 app/
 ├── main.py                   # FastAPI, ciclo de vida, manejo de errores

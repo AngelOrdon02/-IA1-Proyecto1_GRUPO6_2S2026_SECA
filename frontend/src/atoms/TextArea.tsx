@@ -30,9 +30,9 @@ export default function TextArea({
         id={inputId}
         rows={props.rows ?? 3}
         className={cn(
-          "w-full resize-y rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm leading-relaxed text-text transition-colors",
+          "w-full resize-y rounded-md border border-border bg-surface-2 px-3 py-2 text-sm leading-relaxed text-text transition-colors",
           "placeholder:text-text-dim hover:border-border-strong",
-          "focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30 focus-visible:outline-none",
+          "focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/40 focus-visible:outline-none",
           className,
         )}
         {...props}

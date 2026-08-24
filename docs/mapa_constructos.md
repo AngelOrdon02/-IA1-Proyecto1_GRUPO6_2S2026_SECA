@@ -19,10 +19,10 @@ el identificador del caso, lo que permite tener las tres KB cargadas a la vez.
 
 | Archivo | Ejemplo |
 |---|---|
-| `prolog/casos/caso1_museo.pl:31` | `persona(caso1, marco, 'Marco Duarte', sospechoso).` |
-| `prolog/casos/caso1_museo.pl:102` | `evidencia(caso1, e01, huella_digital, '...', sala_jade, 2130).` |
-| `prolog/casos/caso2_hospital.pl` | 87 hechos del caso del hospital |
-| `prolog/casos/caso3_corporativo.pl` | 92 hechos del caso corporativo |
+| `prolog/casos/caso1_louvre.pl` | `persona(caso1, peruggia, 'Vincenzo Peruggia', sospechoso).` |
+| `prolog/casos/caso1_louvre.pl` | `evidencia(caso1, e01, huella_digital, '...', salon_carre, 730).` |
+| `prolog/casos/caso2_whitechapel.pl` | Los hechos del caso del Destripador |
+| `prolog/casos/caso3_rasputin.pl` | Los hechos de la conspiración del Moika |
 
 El esquema completo, con la aridad y el significado de cada argumento, está
 documentado en `prolog/core/esquema.pl`.
@@ -140,12 +140,12 @@ meta. No afirma que sea falsa en el mundo, solo que no se deduce de la KB.
 ### Lección aprendida: el corte rojo accidental
 
 Las reglas propias de cada caso (`patron_robo_interno/2`,
-`pudo_sustituir_dosis/2`, `capacidad_extraccion/2`) **tenían un corte al final**
+`capaz_del_crimen/2`, `capacidad_de_ejecucion/2`) **tenían un corte al final**
 y eso las rompía. Con la persona sin ligar, el corte se comprometía con el
 primer candidato generado y descartaba a los demás, aunque ese primero no
 cumpliera el resto de condiciones. En el caso 3 hacía que
-`sospechoso_prioritario_corporativo/2` no encontrara a nadie: se comprometía con
-Darío Peña y ya no probaba con Vera Solís.
+`sospechoso_prioritario_moika/2` no encontrara a nadie: se comprometía con
+el primer sospechoso generado y ya no probaba con el verdadero culpable.
 
 La corrección fue poner el **generador primero** y las comprobaciones dentro de
 `once/1`:

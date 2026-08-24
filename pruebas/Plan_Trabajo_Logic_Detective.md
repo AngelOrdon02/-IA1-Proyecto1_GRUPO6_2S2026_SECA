@@ -119,7 +119,7 @@ listas en Prolog, nunca sumando en Python.
 
 | | |
 |---|---|
-| **Archivos propios** | `prolog/casos/caso1_museo.pl`, `caso2_hospital.pl`, `caso3_corporativo.pl` |
+| **Archivos propios** | `prolog/casos/caso1_louvre.pl`, `caso2_whitechapel.pl`, `caso3_rasputin.pl` |
 | **Misión** | Que los casos sean resolubles, no triviales y cumplan los mínimos |
 
 **Mínimos por caso (obligatorio, se cuenta):**

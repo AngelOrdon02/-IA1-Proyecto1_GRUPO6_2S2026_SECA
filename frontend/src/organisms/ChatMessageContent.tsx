@@ -13,7 +13,7 @@ import {
   FolderOpen,
 } from "lucide-react";
 import { Badge } from "@/atoms";
-import { CATEGORIA_LABELS } from "@/lib/constants.ts";
+import { CATEGORIA_LABELS, DIFICULTAD_LABELS } from "@/lib/constants.ts";
 import type {
   WelcomeMessage,
   UserActionMessage,
@@ -55,8 +55,8 @@ function Encabezado({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <Icon className={`h-4 w-4 shrink-0 ${tonos[tono]}`} />
-      <span className="min-w-0 flex-1 truncate font-semibold text-text">
+      <Icon className={`h-4 w-4 shrink-0 ${tonos[tono]}`} strokeWidth={1.75} />
+      <span className="min-w-0 flex-1 truncate font-medium text-text">
         {children}
       </span>
       {extra}
@@ -103,7 +103,7 @@ export function WelcomeMessageContent({
         icon={FolderOpen}
         extra={
           <Badge variant={message.dificultad as "facil" | "medio" | "dificil"}>
-            {message.dificultad}
+            {DIFICULTAD_LABELS[message.dificultad] ?? message.dificultad}
           </Badge>
         }
       >
@@ -360,8 +360,10 @@ export function SuspicionContent({
   );
 }
 
-/** Barra proporcional al puntaje mas alto de la lista. El gradiente cambia
-    con la proporcion: frio cuando la sospecha es baja, calido cuando arde. */
+/** Barra proporcional al puntaje mas alto de la lista. El color cambia con
+    la proporcion: verde cuando la sospecha es baja, rojo cuando arde. El
+    relleno es plano — el gradiente y el resplandor que tenia antes hacian
+    parecer un medidor de videojuego lo que es un dato del expediente. */
 export function SuspicionBar({
   valor,
   max,
@@ -372,18 +374,13 @@ export function SuspicionBar({
   className?: string;
 }) {
   const pct = Math.max(4, Math.min(100, (valor / max) * 100));
-  const tono =
-    pct < 35
-      ? "from-info/70 to-success shadow-[0_0_8px_-2px] shadow-success/50"
-      : pct < 70
-        ? "from-info/70 via-accent to-warning shadow-[0_0_8px_-2px] shadow-warning/50"
-        : "from-accent via-warning to-danger shadow-[0_0_8px_-2px] shadow-danger/50";
+  const tono = pct < 35 ? "bg-success" : pct < 70 ? "bg-warning" : "bg-danger";
   return (
     <div
-      className={`h-1.5 overflow-hidden rounded-full bg-surface-3 shadow-[0_1px_0_rgba(0,0,0,0.4)_inset] ${className}`}
+      className={`h-1 overflow-hidden rounded-xs bg-surface-3 ${className}`}
     >
       <div
-        className={`h-full rounded-full bg-gradient-to-r transition-[width] duration-500 ${tono}`}
+        className={`h-full rounded-xs transition-[width] duration-500 ${tono}`}
         style={{ width: `${pct}%` }}
       />
     </div>

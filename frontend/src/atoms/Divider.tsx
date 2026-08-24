@@ -21,7 +21,7 @@ export default function Divider({
     return (
       <div className={cn("flex items-center gap-4", className)}>
         <span className={cn("h-px flex-1", fade)} />
-        <span className="text-xs font-semibold uppercase tracking-[0.14em] text-text-dim">
+        <span className="text-xs font-medium tracking-[0.06em] text-text-dim uppercase">
           {label}
         </span>
         <span className={cn("h-px flex-1", fade)} />

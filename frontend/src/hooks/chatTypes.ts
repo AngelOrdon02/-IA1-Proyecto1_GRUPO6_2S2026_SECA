@@ -1,3 +1,4 @@
+import type { OrbState } from "thinking-orbs";
 import type {
   Declaracion,
   Coartada,
@@ -113,15 +114,27 @@ export type ChatMessage =
   | VerdictMessage
   | SystemMessage;
 
+/**
+ * Como se presenta la espera de una accion: la animacion del orbe y las
+ * frases que la acompañan. Cada accion tiene la suya, de modo que la espera
+ * describe lo que el motor esta haciendo y no un "cargando" generico.
+ */
+export interface Pensamiento {
+  orbe: OrbState;
+  frases: string[];
+}
+
 export interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
+  /** Null cuando no hay consulta en curso. */
+  thinking: Pensamiento | null;
   error: string | null;
 }
 
 export type ChatAction =
   | { type: "ADD_MESSAGE"; message: ChatMessage }
-  | { type: "SET_LOADING"; loading: boolean }
+  | { type: "SET_LOADING"; loading: boolean; thinking?: Pensamiento }
   | { type: "SET_ERROR"; error: string | null }
   | { type: "CLEAR_MESSAGES" }
   | { type: "LOAD_MESSAGES"; messages: ChatMessage[] };
@@ -131,7 +144,11 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
     case "ADD_MESSAGE":
       return { ...state, messages: [...state.messages, action.message] };
     case "SET_LOADING":
-      return { ...state, isLoading: action.loading };
+      return {
+        ...state,
+        isLoading: action.loading,
+        thinking: action.loading ? (action.thinking ?? null) : null,
+      };
     case "SET_ERROR":
       return { ...state, error: action.error };
     case "CLEAR_MESSAGES":

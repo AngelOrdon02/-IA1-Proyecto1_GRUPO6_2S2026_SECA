@@ -3,5 +3,7 @@ export { default as TopBar } from "./TopBar.tsx";
 export { default as ActionComposer } from "./ActionComposer.tsx";
 export { default as ChatThread } from "./ChatThread.tsx";
 export { default as AuraBackground } from "./AuraBackground.tsx";
+export { default as ConstellationField } from "./ConstellationField.tsx";
+export { default as PasosInvestigacion } from "./PasosInvestigacion.tsx";
 export { default as ExpedientePanel } from "./ExpedientePanel.tsx";
 export { default as GrafoRelaciones } from "./GrafoRelaciones.tsx";

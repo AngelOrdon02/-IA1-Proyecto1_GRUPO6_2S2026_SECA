@@ -249,3 +249,28 @@ vista_evidencia(Caso, Id, Tipo, Descripcion, LugarTexto, HoraTexto) :-
 vista_evidencia_persona(Caso, Evidencia, Persona, Nombre) :-
     evidencia_de(Caso, Persona, Evidencia),
     nombre_de(Caso, Persona, Nombre).
+
+% ---------------------------------------------------------------------------
+% vinculo_evidencia(+Caso, +Evidencia, -Persona, -Nombre, -Relacion)
+% Personas a las que una evidencia senala, con la naturaleza del vinculo ya
+% redactada. Lo consume el modulo de investigacion al examinar una evidencia.
+% La deduccion (vincula/3 directo o situacion fisica por
+% evidencia_lugar_persona/4) ocurre aqui, no en Python.
+% ---------------------------------------------------------------------------
+vinculo_evidencia(Caso, Evidencia, Persona, Nombre, Relacion) :-
+    vincula(Caso, Evidencia, Persona),
+    etiqueta(Caso, Persona, Nombre),
+    (   evidencia_lugar_persona(Caso, Evidencia, Persona, Lugar)
+    ->  etiqueta(Caso, Lugar, LugarNombre),
+        format(atom(Relacion),
+               'La evidencia apunta a esta persona y la situa fisicamente en ~w.',
+               [LugarNombre])
+    ;   Relacion = 'La evidencia apunta directamente a esta persona.'
+    ).
+vinculo_evidencia(Caso, Evidencia, Persona, Nombre, Relacion) :-
+    evidencia_lugar_persona(Caso, Evidencia, Persona, Lugar),
+    \+ vincula(Caso, Evidencia, Persona),
+    etiqueta(Caso, Persona, Nombre),
+    etiqueta(Caso, Lugar, LugarNombre),
+    format(atom(Relacion),
+           'La evidencia situa fisicamente a esta persona en ~w.', [LugarNombre]).

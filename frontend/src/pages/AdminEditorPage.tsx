@@ -75,7 +75,7 @@ export default function AdminEditorPage() {
             <FileCode2 className="h-4 w-4 shrink-0 text-accent" />
             <h1 className="truncate font-mono text-sm text-text">{archivo}</h1>
             {modificado && (
-              <span className="shrink-0 rounded-full bg-warning/12 px-2 py-0.5 text-xs font-semibold text-warning-soft">
+              <span className="shrink-0 rounded-xs bg-warning/12 px-1.5 py-0.5 text-xs font-medium text-warning-soft">
                 Sin guardar
               </span>
             )}

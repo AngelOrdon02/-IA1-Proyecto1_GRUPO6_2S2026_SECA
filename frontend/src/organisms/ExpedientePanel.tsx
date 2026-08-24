@@ -109,15 +109,16 @@ export default function ExpedientePanel({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-3.5">
-        <FolderOpen className="h-4 w-4 shrink-0 text-accent" />
-        <h2 className="flex-1 text-sm font-semibold text-text">Expediente</h2>
+        <FolderOpen className="h-4 w-4 shrink-0 text-accent" strokeWidth={1.75} />
+        <h2 className="flex-1 text-sm font-medium text-text">Expediente</h2>
         <button
           type="button"
           onClick={cargar}
           aria-label="Actualizar expediente"
-          className="mr-10 rounded-lg p-1.5 text-text-dim transition-colors hover:bg-surface-hover hover:text-text lg:mr-0"
+          className="mr-10 rounded-sm p-1.5 text-text-dim transition-colors hover:bg-surface-hover hover:text-text lg:mr-0"
         >
           <RefreshCw
+            strokeWidth={1.75}
             className={`h-4 w-4 ${cargando ? "animate-spin text-accent" : ""}`}
           />
         </button>
@@ -126,7 +127,9 @@ export default function ExpedientePanel({
       {/* Rail horizontal: el vertical de 176px dejaba ~144px utiles de panel */}
       <div
         role="tablist"
-        className="flex shrink-0 gap-1 overflow-x-auto border-b border-border px-2 py-2"
+        /* La barra de scroll horizontal tapaba el subrayado de la pestaña
+           activa; se oculta y el desplazamiento queda en rueda/arrastre. */
+        className="relative flex shrink-0 gap-0.5 overflow-x-auto border-b border-border px-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {TABS.map((tab) => (
           <TabItem

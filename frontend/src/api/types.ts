@@ -372,7 +372,8 @@ export interface ExaminarResponse {
 // Opcional 2: respuesta del endpoint POST /sesiones/{sesion}/puntos
 export interface PuntosResponse {
   ok: boolean;
-  sesion: string;
+  puntuacion: number;
+  delta: number;
 }
 
 export interface GrafoNodo {

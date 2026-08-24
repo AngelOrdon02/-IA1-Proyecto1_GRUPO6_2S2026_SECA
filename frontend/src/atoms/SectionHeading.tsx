@@ -10,6 +10,8 @@ interface SectionHeadingProps {
   className?: string;
 }
 
+/* El icono ya no vive dentro de una caja teñida de 36px: a ese tamaño la
+   caja pesaba mas que el titulo. Ahora es el icono suelto en el acento. */
 export default function SectionHeading({
   icon: Icon,
   title,
@@ -18,15 +20,13 @@ export default function SectionHeading({
   className,
 }: SectionHeadingProps) {
   return (
-    <div className={cn("mb-4 flex items-center gap-3", className)}>
+    <div className={cn("mb-4 flex items-center gap-2.5", className)}>
       {Icon && (
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-accent/20 bg-accent/10 text-accent">
-          <Icon className="h-4 w-4" />
-        </span>
+        <Icon className="h-[18px] w-[18px] shrink-0 text-accent" strokeWidth={1.75} />
       )}
-      <h2 className="text-lg font-semibold text-text">{title}</h2>
+      <h2 className="text-base font-medium tracking-tight text-text">{title}</h2>
       {count !== undefined && (
-        <span className="rounded-full bg-surface-3 px-2 py-0.5 text-xs font-semibold tabular-nums text-text-muted">
+        <span className="rounded-xs bg-surface-3 px-1.5 text-xs tabular-nums text-text-muted">
           {count}
         </span>
       )}

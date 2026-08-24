@@ -19,18 +19,18 @@ export default function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-surface/60 px-6 py-10 text-center",
+        "flex flex-col items-center justify-center gap-3 rounded-md border border-dashed border-border bg-surface/40 px-6 py-10 text-center",
         className,
       )}
       {...props}
     >
       {icon && (
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-3 text-text-dim [&>svg]:h-5 [&>svg]:w-5">
+        <div className="text-text-dim [&>svg]:h-6 [&>svg]:w-6 [&>svg]:stroke-[1.5]">
           {icon}
         </div>
       )}
       <div className="space-y-1">
-        <p className="text-sm font-medium text-text-muted">{message}</p>
+        <p className="text-sm text-text-muted">{message}</p>
         {hint && (
           <p className="max-w-xs text-xs text-text-dim">{hint}</p>
         )}

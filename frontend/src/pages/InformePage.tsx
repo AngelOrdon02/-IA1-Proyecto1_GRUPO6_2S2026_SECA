@@ -116,7 +116,7 @@ export default function InformePage() {
 
           {/* Cabecera del caso */}
           <header className="mb-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-dim">
+            <p className="text-xs font-medium tracking-[0.06em] text-text-dim uppercase">
               Informe final de investigación
             </p>
             <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-text sm:text-4xl">
@@ -247,7 +247,7 @@ export default function InformePage() {
                     key={r.Id}
                     className="informe-card flex gap-4 rounded-xl border border-border bg-surface p-4"
                   >
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-accent/25 bg-accent/12 font-mono text-xs font-semibold text-accent-soft">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-xs border border-accent/20 bg-accent/10 font-mono text-xs text-accent-soft">
                       {i + 1}
                     </span>
                     <div className="min-w-0">

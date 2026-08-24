@@ -65,19 +65,16 @@ swipl prolog/logic_detective.pl
 .venv/bin/python -m pytest tests/ -v
 ```
 
-86 pruebas: motor de inferencia, integración Python-Prolog, descubrimiento
-progresivo, bitácora, resolución y seguridad.
-
-> Hoy pasan 82. Las 4 restantes apuntan a las plantillas Jinja que sustituyó el
-> frontend React y hay que reescribirlas contra la API. Ver [TODO.md](TODO.md).
+89 pruebas: motor de inferencia, integración Python-Prolog, descubrimiento
+progresivo, bitácora, resolución y seguridad. Hoy pasan todas.
 
 ## Los tres casos
 
 | Caso | Título | Dificultad | Escenario |
 |---|---|---|---|
-| `caso1` | El Códice de Jade | Fácil | Robo en un museo durante una gala |
-| `caso2` | La dosis fatal | Medio | Sustitución de un medicamento en un hospital |
-| `caso3` | El código fuente robado | Difícil | Filtración del prototipo de una empresa |
+| `caso1` | La Sonrisa Robada | Fácil | El robo de la Gioconda en el Louvre (París, 1911) |
+| `caso2` | Sombras de Whitechapel | Medio | El otoño de Jack el Destripador (Londres, 1888) |
+| `caso3` | La Última Noche de Rasputín | Difícil | La conspiración del Palacio Moika (San Petersburgo, 1916) |
 
 Cada uno cumple los mínimos del enunciado: 4 sospechosos, 10 evidencias,
 5 lugares, 5 declaraciones y 10 reglas de inferencia propias.

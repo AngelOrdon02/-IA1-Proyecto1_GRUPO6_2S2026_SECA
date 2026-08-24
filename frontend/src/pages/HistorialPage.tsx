@@ -150,7 +150,7 @@ export default function HistorialPage() {
             )}
 
             {/* Barra de Filtros y Búsqueda */}
-            <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface p-4 shadow-sm">
+            <div className="mb-6 flex flex-wrap items-center gap-3 rounded-md border border-border bg-surface p-4">
               <div className="min-w-[16rem] flex-1">
                 <div className="relative">
                   <Search className="absolute left-3 top-2.5 h-4 w-4 text-text-dim" />
@@ -179,9 +179,9 @@ export default function HistorialPage() {
                   onChange={(e) => setFiltroCaso(e.target.value)}
                   options={[
                     { value: "todos", label: "Todos los casos" },
-                    { value: "caso1", label: "Caso 1 (Museo)" },
-                    { value: "caso2", label: "Caso 2 (Hospital)" },
-                    { value: "caso3", label: "Caso 3 (Corporativo)" },
+                    { value: "caso1", label: "Caso 1 (La Sonrisa Robada)" },
+                    { value: "caso2", label: "Caso 2 (Whitechapel)" },
+                    { value: "caso3", label: "Caso 3 (Rasputin)" },
                   ]}
                   className="w-44 text-xs"
                 />
@@ -252,7 +252,7 @@ function MetricCard({
   color: string;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-gradient-to-b from-surface-2 to-surface p-4 shadow-card">
+    <div className="rounded-md border border-border bg-surface p-4">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-text-dim">{label}</span>
         <Icon className={`h-4 w-4 ${color}`} />

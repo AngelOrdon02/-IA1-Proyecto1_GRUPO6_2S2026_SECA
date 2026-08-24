@@ -58,7 +58,8 @@ export default function ChatLayout({
           subtitle={subtitle}
           badges={badges}
           actions={actions}
-          onOpenSidebar={() => setSidebarOpen(true)}
+          sidebarOpen={sidebarOpen}
+          onOpenSidebar={() => setSidebarOpen((v) => !v)}
           sidebarCollapsed={sidebarCollapsed}
           onToggleSidebar={() => setSidebarCollapsed((v) => !v)}
           onOpenPanel={rightPanel ? () => setPanelOpen(true) : undefined}
@@ -86,12 +87,12 @@ export default function ChatLayout({
             onClick={() => setPanelOpen(false)}
             aria-hidden="true"
           />
-          <div className="relative flex h-full w-[min(26rem,100vw)] flex-col border-l border-border bg-bg-soft shadow-2xl shadow-black/60">
+          <div className="relative flex h-full w-[min(26rem,100vw)] flex-col border-l border-border bg-bg-soft shadow-overlay">
             <button
               type="button"
               onClick={() => setPanelOpen(false)}
               aria-label="Cerrar expediente"
-              className="absolute right-3 top-3 z-10 rounded-lg p-2 text-text-dim transition-colors hover:bg-surface-hover hover:text-text"
+              className="absolute right-3 top-3 z-10 rounded-sm p-2 text-text-dim transition-colors hover:bg-surface-hover hover:text-text"
             >
               <X className="h-5 w-5" />
             </button>

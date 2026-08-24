@@ -24,9 +24,9 @@
 :- ensure_loaded('core/api_json').
 
 % --- Casos de investigacion -------------------------------------------------
-:- ensure_loaded('casos/caso1_museo').
-:- ensure_loaded('casos/caso2_hospital').
-:- ensure_loaded('casos/caso3_corporativo').
+:- ensure_loaded('casos/caso1_louvre').
+:- ensure_loaded('casos/caso2_whitechapel').
+:- ensure_loaded('casos/caso3_rasputin').
 
 % ===========================================================================
 % API DE CONSULTA PARA PYTHON

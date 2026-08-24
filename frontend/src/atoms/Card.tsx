@@ -9,17 +9,14 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
 }
 
-/* Las superficies planas (color uniforme + borde gris) son lo que hace ver
-   "generica" una card. Aqui cada tono es un gradiente vertical sutil — la
-   luz viene de arriba, como en el fondo aurora — y `shadow-card` aporta la
-   hairline superior luminosa que separa la card de su sombra. Siguen siendo
-   opacas: el texto nunca se apoya sobre el aura. */
+/* Superficies planas y hairline de 1px: la jerarquia entre cards la marca el
+   nivel de superficie, no un gradiente ni una sombra. El hover ya no levanta
+   la card (ese desplazamiento arrastraba el ojo en cuadriculas densas); solo
+   aclara el borde, que es suficiente para leer que es pulsable. */
 const tones: Record<CardTone, string> = {
-  default:
-    "bg-gradient-to-b from-surface-2 to-surface border border-border shadow-card",
-  raised:
-    "bg-gradient-to-b from-surface-3 to-surface-2 border border-border-strong shadow-card",
-  flat: "bg-surface-2 border border-transparent",
+  default: "bg-surface border border-border",
+  raised: "bg-surface-2 border border-border-strong",
+  flat: "bg-surface-2/60 border border-transparent",
 };
 
 export default function Card({
@@ -32,10 +29,10 @@ export default function Card({
   return (
     <div
       className={cn(
-        "rounded-xl p-5",
+        "rounded-lg p-5",
         tones[tone],
         interactive &&
-          "cursor-pointer transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-border-strong hover:shadow-card-hover",
+          "cursor-pointer transition-colors duration-150 hover:border-border-strong hover:bg-surface-hover",
         className,
       )}
       {...props}

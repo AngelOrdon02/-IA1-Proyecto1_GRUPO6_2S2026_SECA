@@ -275,6 +275,14 @@ def evidencias_descubiertas(sesion: str) -> list[dict[str, str]]:
 def examinar_evidencia(sesion: str, evidencia: str) -> dict[str, Any]:
     datos = _sesion_activa(sesion)
     caso, evidencia = datos["caso"], _atomo(evidencia)
+
+    # Descubrimiento progresivo: solo se examina lo ya hallado en un lugar.
+    if not db.fue_descubierto(sesion, "evidencia", evidencia):
+        raise AccionInvalida(
+            f"Todavia no has encontrado la evidencia {evidencia}. "
+            "Investiga los lugares del caso para descubrirla."
+        )
+
     engine = obtener_engine()
 
     ficha = engine.uno(
@@ -310,11 +318,16 @@ def relaciones(sesion: str) -> list[dict[str, str]]:
 
 
 def motivos(sesion: str) -> list[dict[str, str]]:
+    """Motivos de las personas YA interrogadas: el resto sigue oculto."""
     datos = _sesion_activa(sesion)
+    interrogados = db.descubiertos(sesion, "interrogatorio")
+    if not interrogados:
+        db.registrar_accion(sesion, "analizar_motivos", "sin interrogatorios aun")
+        return []
     engine = obtener_engine()
     filas = engine.consultar(
-        f"motivo({datos['caso']}, Persona, Descripcion), "
-        f"nombre_de({datos['caso']}, Persona, Nombre)"
+        f"pertenece(Persona, {_lista_prolog(interrogados)}), "
+        f"vista_motivo({datos['caso']}, Persona, Nombre, Tipo, Descripcion)"
     )
     db.registrar_accion(sesion, "analizar_motivos", f"{len(filas)} motivo(s)")
     return filas
@@ -324,8 +337,8 @@ def oportunidades(sesion: str) -> list[dict[str, str]]:
     datos = _sesion_activa(sesion)
     engine = obtener_engine()
     filas = engine.consultar(
-        f"vista_oportunidad({datos['caso']}, Persona, Nombre, "
-        f"TuvoAcceso, TuvoOportunidad, TuvaMedios)"
+        f"vista_analisis({datos['caso']}, Persona, Nombre, "
+        f"Acceso, Oportunidad, Motivo, Medios, Coartada)"
     )
     db.registrar_accion(sesion, "analizar_oportunidades", f"{len(filas)} persona(s)")
     return filas

@@ -7,9 +7,9 @@ interface AvatarProps {
 }
 
 const sizes = {
-  sm: "h-8 w-8 text-xs",
-  md: "h-10 w-10 text-sm",
-  lg: "h-12 w-12 text-base",
+  sm: "h-7 w-7 text-xs",
+  md: "h-9 w-9 text-xs",
+  lg: "h-11 w-11 text-sm",
 };
 
 function getInitials(name: string): string {
@@ -21,6 +21,9 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
+/* Cuadrado de esquina corta en lugar del circulo anterior: en una lista de
+   sospechosos, las iniciales dentro de un rectangulo se leen como una ficha
+   de expediente, no como un avatar de red social. */
 export default function Avatar({
   name,
   size = "md",
@@ -29,7 +32,7 @@ export default function Avatar({
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-full border border-accent/25 bg-accent/12 font-semibold text-accent-soft",
+        "flex shrink-0 items-center justify-center rounded-sm border border-accent/20 bg-accent/10 font-medium tracking-wide text-accent-soft",
         sizes[size],
         className,
       )}

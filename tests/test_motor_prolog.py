@@ -62,28 +62,28 @@ def test_03_el_responsable_reune_los_cuatro_pilares(engine, caso):
 def test_04_el_acceso_respeta_los_permisos_de_cada_lugar(engine):
     """El acceso no es mera conectividad fisica del grafo de lugares.
 
-    Tomas Iriarte puede caminar del jardin a la Sala Jade, pero no esta
+    El marques de Valfierno puede caminar de la Cour Carree al Salon Carre, pero no esta
     autorizado a entrar: alcanzable_por/5 solo atraviesa lugares permitidos.
     """
-    assert engine.es_cierto("alcanzable(caso1, jardin, sala_jade, [jardin])")
-    assert not engine.es_cierto("tiene_acceso(caso1, tomas)")
-    assert engine.es_cierto("tiene_acceso(caso1, marco)")
+    assert engine.es_cierto("alcanzable(caso1, cour_carree, salon_carre, [cour_carree])")
+    assert not engine.es_cierto("tiene_acceso(caso1, valfierno)")
+    assert engine.es_cierto("tiene_acceso(caso1, peruggia)")
 
 
 def test_05_la_oportunidad_exige_cercania_y_ventana_temporal(engine):
     """Estar lejos del lugar durante la ventana no da oportunidad."""
-    assert engine.es_cierto("tuvo_oportunidad(caso1, marco)")
-    assert not engine.es_cierto("tuvo_oportunidad(caso1, tomas)")
-    assert not engine.es_cierto("tuvo_oportunidad(caso2, sr_hugo)")
+    assert engine.es_cierto("tuvo_oportunidad(caso1, peruggia)")
+    assert not engine.es_cierto("tuvo_oportunidad(caso1, valfierno)")
+    assert not engine.es_cierto("tuvo_oportunidad(caso2, tumblety)")
 
 
 def test_06_los_medios_exigen_todos_los_requeridos(engine):
     """posee_todos/3 recorre la lista completa de medios necesarios."""
-    assert engine.es_cierto("tiene_medios(caso1, marco)")
-    assert not engine.es_cierto("tiene_medios(caso1, elena)")
-    faltantes = engine.uno("medios_faltantes(caso1, nadia, Faltan)")
-    assert "codigo_alarma" in faltantes["Faltan"]
-    assert "llave_vitrina" in faltantes["Faltan"]
+    assert engine.es_cierto("tiene_medios(caso1, peruggia)")
+    assert not engine.es_cierto("tiene_medios(caso1, pieret)")
+    faltantes = engine.uno("medios_faltantes(caso1, paupardin, Faltan)")
+    assert "conocimiento_vitrina" in faltantes["Faltan"]
+    assert "bata_de_obrero" in faltantes["Faltan"]
 
 
 # ---------------------------------------------------------------------------
@@ -91,21 +91,21 @@ def test_06_los_medios_exigen_todos_los_requeridos(engine):
 # ---------------------------------------------------------------------------
 
 def test_07_una_coartada_de_testigo_fiable_es_valida(engine):
-    """Elena queda descartada porque Rosa, testigo no sospechosa, la respalda."""
-    assert engine.es_cierto("coartada_valida(caso1, elena)")
-    assert engine.es_cierto("descartado(caso1, elena, coartada_valida)")
+    """Pieret queda descartado porque Beroud, testigo no sospechoso, lo respalda."""
+    assert engine.es_cierto("coartada_valida(caso1, pieret)")
+    assert engine.es_cierto("descartado(caso1, pieret, coartada_valida)")
 
 
 def test_08_una_coartada_se_invalida_por_cuatro_vias_distintas(engine):
     """Sin coartada, testigo sospechoso, testigo mentiroso o evidencia que refuta."""
-    razones_marco = engine.valores("coartada_invalida(caso1, marco, R)", "R")
+    razones_marco = engine.valores("coartada_invalida(caso1, peruggia, R)", "R")
     assert any("testigo_mintio" in r for r in razones_marco)
     assert any("refutada_por_evidencia" in r for r in razones_marco)
 
-    razones_nadia = engine.valores("coartada_invalida(caso1, nadia, R)", "R")
+    razones_nadia = engine.valores("coartada_invalida(caso1, paupardin, R)", "R")
     assert any("testigo_es_sospechoso" in r for r in razones_nadia)
 
-    razones_pablo = engine.valores("coartada_invalida(caso2, enf_pablo, R)", "R")
+    razones_pablo = engine.valores("coartada_invalida(caso2, druitt, R)", "R")
     assert "sin_coartada" in razones_pablo
 
 
@@ -141,7 +141,7 @@ def test_12_el_responsable_proporciono_informacion_falsa(engine, caso):
 def test_13_la_evidencia_fisica_prevalece_sobre_el_testimonio(engine):
     """Ante el choque, se marca falsa la declaracion, nunca la evidencia."""
     razones = engine.valores(
-        "informacion_falsa(caso1, marco, mentira(_, _, Razon))", "Razon"
+        "informacion_falsa(caso1, peruggia, mentira(_, _, Razon))", "Razon"
     )
     assert any("negado_por_evidencia_fisica" in r for r in razones)
     # La evidencia nunca queda marcada como falsa; la declaracion si.
@@ -153,22 +153,22 @@ def test_13_la_evidencia_fisica_prevalece_sobre_el_testimonio(engine):
 # ---------------------------------------------------------------------------
 
 def test_14_las_evidencias_se_asocian_a_cada_sospechoso(engine):
-    evidencias = engine.uno("evidencias_de(caso1, marco, Lista)")
+    evidencias = engine.uno("evidencias_de(caso1, peruggia, Lista)")
     for identificador in ("e01", "e02", "e03", "e07"):
         assert identificador in evidencias["Lista"]
 
 
 def test_15_las_relaciones_relevantes_conectan_con_la_victima(engine):
     filas = engine.consultar("relacion_relevante(caso1, P1, P2, Tipo)")
-    assert any(f["P2"] == "dr_salazar" for f in filas)
+    assert any(f["P2"] == "homolle" for f in filas)
 
 
 def test_16_la_cadena_de_relaciones_es_recursiva(engine):
     """conectados/4 encuentra vinculos indirectos sin caer en ciclos."""
-    resultado = engine.uno("conectados(caso1, julio, dr_salazar, Cadena)")
+    resultado = engine.uno("conectados(caso1, lancelotti, homolle, Cadena)")
     assert resultado is not None
-    assert "julio" in resultado["Cadena"]
-    assert "dr_salazar" in resultado["Cadena"]
+    assert "lancelotti" in resultado["Cadena"]
+    assert "homolle" in resultado["Cadena"]
 
 
 # ---------------------------------------------------------------------------
@@ -205,7 +205,7 @@ def test_19_cada_caso_tiene_un_complice_deducible(engine, caso):
 
 def test_20_el_nivel_de_sospecha_no_suma_dos_veces_el_mismo_factor(engine):
     """Un sospechoso con varios motivos aporta el factor 'motivo' una sola vez."""
-    factores = engine.uno("factores_de(caso1, marco, Factores)")
+    factores = engine.uno("factores_de(caso1, peruggia, Factores)")
     assert factores["Factores"].count("motivo-") == 1
 
 
@@ -258,8 +258,8 @@ def test_25_los_cortes_hacen_deterministas_las_conclusiones(engine):
 
 def test_26_la_recursion_sobre_lugares_no_entra_en_bucle(engine):
     """El grafo de lugares tiene ciclos; la lista de visitados los corta."""
-    assert engine.es_cierto("alcanzable(caso1, jardin, deposito, [jardin])")
-    assert engine.es_cierto("alcanzable(caso3, estacionamiento, sala_servidores, [estacionamiento])")
+    assert engine.es_cierto("alcanzable(caso1, cour_carree, almacen_esculturas, [cour_carree])")
+    assert engine.es_cierto("alcanzable(caso3, patio, sotano, [patio])")
 
 
 # ---------------------------------------------------------------------------

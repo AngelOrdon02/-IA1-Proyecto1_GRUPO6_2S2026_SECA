@@ -2,15 +2,13 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   Search,
-  MessageSquare,
-  MapPin,
-  Scale,
   ArrowRight,
   FolderOpen,
   History,
   Shuffle,
 } from "lucide-react";
 import AuraBackground from "@/organisms/AuraBackground.tsx";
+import PasosInvestigacion from "@/organisms/PasosInvestigacion.tsx";
 import { ChatLayout } from "@/templates";
 import { Badge, Button, Spinner, Divider, EmptyState } from "@/atoms";
 import { api } from "@/api/client.ts";
@@ -18,24 +16,6 @@ import { useSesiones } from "@/hooks";
 import type { Caso } from "@/api/types.ts";
 import { DIFICULTAD_LABELS, ESTADO_LABELS } from "@/lib/constants.ts";
 import heroIlustracion from "@/assets/software tester-pana.png";
-
-const PASOS = [
-  {
-    icon: MessageSquare,
-    titulo: "Interroga",
-    texto: "Cada declaración y coartada entra a la base de conocimiento.",
-  },
-  {
-    icon: MapPin,
-    titulo: "Recorre y examina",
-    texto: "Los lugares revelan evidencias que se vinculan con personas.",
-  },
-  {
-    icon: Scale,
-    titulo: "Acusa",
-    texto: "Prolog contrasta tu acusación con el responsable deducido.",
-  },
-];
 
 /* Hairline superior de la card de caso, teñida segun dificultad: el color
    se percibe antes de leer ninguna etiqueta. */
@@ -106,8 +86,8 @@ export default function InicioPage() {
             {/* Portada */}
             <header className="mb-12 flex flex-col gap-10 lg:flex-row lg:items-center lg:gap-14">
               <div className="max-w-2xl flex-1">
-                <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-border bg-surface/80 px-3.5 py-1.5 text-sm text-text-muted">
-                  <Search className="h-4 w-4 text-accent" />
+                <span className="mb-5 inline-flex items-center gap-2 rounded-sm border border-border bg-surface/80 px-3 py-1 text-sm text-text-muted">
+                  <Search className="h-4 w-4 text-accent" strokeWidth={1.75} />
                   Sistema experto de investigación
                 </span>
                 <h1 className="font-display text-4xl font-semibold tracking-tight text-text sm:text-5xl">
@@ -162,27 +142,7 @@ export default function InicioPage() {
             </header>
 
             {/* Como funciona */}
-            <div className="mb-12 grid gap-3 sm:grid-cols-3">
-              {PASOS.map((paso, i) => (
-                <div
-                  key={paso.titulo}
-                  className="rounded-xl border border-border bg-gradient-to-b from-surface-2 to-surface p-4 shadow-card"
-                >
-                  <div className="mb-3 flex items-center gap-2.5">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-accent/25 bg-gradient-to-b from-accent/20 to-accent/8 text-accent">
-                      <paso.icon className="h-4 w-4" />
-                    </span>
-                    <span className="font-mono text-xs text-text-dim">
-                      0{i + 1}
-                    </span>
-                  </div>
-                  <p className="font-semibold text-text">{paso.titulo}</p>
-                  <p className="mt-1 text-sm leading-relaxed text-text-muted">
-                    {paso.texto}
-                  </p>
-                </div>
-              ))}
-            </div>
+            <PasosInvestigacion />
 
             <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
               <Divider label="Casos disponibles" className="flex-1" />
@@ -239,20 +199,20 @@ function CasoCard({
 
   return (
     <div
-      className="group relative flex animate-fade-up flex-col overflow-hidden rounded-xl border border-border bg-gradient-to-b from-surface-2 to-surface shadow-card transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-border-strong hover:shadow-card-hover"
+      className="group relative flex animate-fade-up flex-col overflow-hidden rounded-md border border-border bg-surface transition-colors duration-150 hover:border-border-strong hover:bg-surface-2"
       style={{ animationDelay: `${(numero - 1) * 70}ms` }}
     >
       {/* Franja teñida por dificultad */}
       <span
         aria-hidden="true"
-        className={`absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent to-transparent ${
+        className={`absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent to-transparent ${
           LUZ_DIFICULTAD[caso.Dificultad] ?? "via-border-strong"
         }`}
       />
 
       <div className="flex flex-1 flex-col gap-4 p-5 pb-4">
         <div className="flex items-start justify-between gap-3">
-          <span className="mt-1 font-mono text-xs uppercase tracking-[0.14em] text-text-dim">
+          <span className="mt-0.5 font-mono text-xs tracking-[0.06em] text-text-dim uppercase">
             Expediente Nº {String(numero).padStart(2, "0")}
           </span>
           <Badge variant={caso.Dificultad}>
@@ -261,7 +221,7 @@ function CasoCard({
         </div>
 
         <div className="flex-1">
-          <h2 className="font-display text-xl font-semibold leading-snug text-text">
+          <h2 className="font-display text-lg font-semibold leading-snug text-text">
             {caso.Titulo}
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-text-muted">

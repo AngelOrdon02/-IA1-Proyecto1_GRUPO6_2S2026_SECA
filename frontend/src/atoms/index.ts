@@ -10,6 +10,7 @@ export { default as Avatar } from "./Avatar.tsx";
 export { default as MonoText } from "./MonoText.tsx";
 export { default as EmptyState } from "./EmptyState.tsx";
 export { default as GlassPanel } from "./GlassPanel.tsx";
-export { default as TypingDots } from "./TypingDots.tsx";
+export { default as ThinkingOrbs } from "./ThinkingOrbs.tsx";
+export { default as MorphIcon } from "./MorphIcon.tsx";
 export { default as ActionChip } from "./ActionChip.tsx";
 export { default as SectionHeading } from "./SectionHeading.tsx";

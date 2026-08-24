@@ -1,28 +1,30 @@
 import type { ReactNode } from "react";
+import ConstellationField from "./ConstellationField.tsx";
 
 /**
- * Ambiente de fondo "Noir Aurora".
+ * Ambiente de fondo de la aplicacion.
  *
- * Arquitectura de luz, de arriba hacia abajo en orden de pintado:
+ * Orden de pintado, de atras hacia delante:
  *
- *   1-2. Cortinas de aurora (esmeralda/teal) con `screen`, concentradas en
- *      el tercio superior por mascaras radiales: es la zona del sidebar y la
- *      marca, donde casi no hay texto corrido.
- *   3. Resplandor azul profundo en la esquina superior derecha: contrapunto
- *      frio que da profundidad sin salirse de la familia.
- *   4-5. Resplandores esmeralda abajo a la derecha (y un eco tenue a la
- *      izquierda): anclan el fondo con el acento de la marca.
- *   6. "Corredor central" con `multiply`: oscurece la franja donde vive el
- *      contenido (chat, cards, formularios). Es la pieza que garantiza el
- *      contraste del texto sin tener que apagar las auroras.
- *   7. Reticula, vineta y grano de pelicula.
+ *   1-2. Dos cortinas de aurora esmeralda ancladas al tercio superior, donde
+ *      casi no hay texto corrido.
+ *   3. Contrapunto azul frio en la esquina superior derecha.
+ *   4. Malla de nodos enlazados: la unica capa con movimiento propio y la
+ *      que da identidad al fondo. Va enmascarada para desvanecerse en la
+ *      franja central, que es donde vive el texto.
+ *   5. Corredor central en `multiply`: oscurece esa franja y es lo que
+ *      garantiza el contraste sin tener que apagar las capas de luz.
+ *   6. Vineta y grano.
  *
- * La primera version con blend modes fallo por usar paradas en blanco puro:
- * aqui ninguna parada pasa de un cian/teal suave con alpha <= 0.26.
+ * Respecto a la version anterior, todas las intensidades bajan
+ * aproximadamente a la mitad y desaparecen la reticula de 72px y el
+ * resplandor inferior: el fondo debe leerse como atmosfera, no como
+ * decoracion compitiendo con la interfaz. Ninguna parada de color llega a
+ * blanco puro — eso era lo que lavaba el texto bajo los blend modes.
  *
  * La capa es `fixed`: no se repinta al hacer scroll ni crece con el
- * contenido. Las cortinas derivan muy despacio; la regla global de
- * `prefers-reduced-motion` las deja estaticas.
+ * contenido. `prefers-reduced-motion` deja las auroras quietas y la malla
+ * en un unico fotograma.
  */
 export default function AuraBackground({
   children,
@@ -40,80 +42,59 @@ export default function AuraBackground({
           className="animate-aurora-a absolute -inset-[8%] blur-[85px] md:blur-[122px]"
           style={{
             background:
-              "linear-gradient(154deg, transparent 18%, rgba(10,61,47,0.06) 29%, rgba(43,217,199,0.18) 36%, rgba(125,235,200,0.26) 42%, rgba(53,212,156,0.24) 48%, rgba(30,150,110,0.18) 55%, rgba(38,196,166,0.20) 62%, rgba(13,72,56,0.08) 68%, transparent 82%)",
+              "linear-gradient(154deg, transparent 20%, rgba(43,217,199,0.09) 36%, rgba(125,235,200,0.13) 43%, rgba(53,212,156,0.11) 50%, rgba(38,196,166,0.09) 62%, transparent 80%)",
             mixBlendMode: "screen",
             maskImage:
-              "radial-gradient(ellipse 92% 62% at 32% 0%, black 25%, transparent 72%)",
+              "radial-gradient(ellipse 92% 58% at 32% 0%, black 20%, transparent 70%)",
             WebkitMaskImage:
-              "radial-gradient(ellipse 92% 62% at 32% 0%, black 25%, transparent 72%)",
+              "radial-gradient(ellipse 92% 58% at 32% 0%, black 20%, transparent 70%)",
           }}
         />
 
         {/* Segunda cortina, teal cruzando desde arriba-derecha */}
         <div
-          className="animate-aurora-b absolute -inset-[8%] opacity-90 blur-[75px] md:blur-[108px]"
+          className="animate-aurora-b absolute -inset-[8%] opacity-80 blur-[75px] md:blur-[108px]"
           style={{
             background:
-              "linear-gradient(128deg, transparent 28%, rgba(14,84,70,0.06) 38%, rgba(38,196,166,0.16) 43%, rgba(115,226,205,0.22) 48%, rgba(62,196,170,0.18) 52%, rgba(43,217,199,0.14) 57%, rgba(22,102,88,0.10) 62%, transparent 76%)",
+              "linear-gradient(128deg, transparent 30%, rgba(38,196,166,0.08) 43%, rgba(115,226,205,0.11) 48%, rgba(62,196,170,0.08) 54%, transparent 74%)",
             mixBlendMode: "screen",
             maskImage:
-              "radial-gradient(ellipse 85% 60% at 68% 4%, black 22%, transparent 72%)",
+              "radial-gradient(ellipse 85% 56% at 68% 4%, black 18%, transparent 70%)",
             WebkitMaskImage:
-              "radial-gradient(ellipse 85% 60% at 68% 4%, black 22%, transparent 72%)",
+              "radial-gradient(ellipse 85% 56% at 68% 4%, black 18%, transparent 70%)",
           }}
         />
 
-        {/* Azul profundo tenue, esquina superior derecha */}
+        {/* Azul profundo, esquina superior derecha */}
         <div
-          className="animate-aurora-c absolute -inset-[8%] opacity-70 blur-[110px] md:blur-[160px]"
+          className="animate-aurora-c absolute -inset-[8%] opacity-60 blur-[110px] md:blur-[160px]"
           style={{
             background:
-              "radial-gradient(ellipse 50% 28% at 76% 12%, rgba(44,92,138,0.11) 0%, rgba(35,68,100,0.045) 45%, transparent 82%)",
+              "radial-gradient(ellipse 50% 28% at 76% 12%, rgba(44,92,138,0.10) 0%, transparent 78%)",
             mixBlendMode: "screen",
           }}
         />
 
-        {/* Esmeralda, abajo a la derecha: ancla con el acento de marca */}
+        {/* Malla de nodos: se apaga en la franja de lectura */}
         <div
-          className="animate-aurora-b absolute -inset-[8%] blur-[80px] md:blur-[115px]"
+          className="absolute inset-0"
           style={{
-            background:
-              "radial-gradient(ellipse 55% 42% at 84% 90%, rgba(45,212,167,0.11) 0%, rgba(45,212,167,0.045) 42%, transparent 72%)",
-            mixBlendMode: "screen",
+            maskImage:
+              "radial-gradient(ellipse 78% 62% at 50% 46%, transparent 8%, rgba(0,0,0,0.45) 46%, black 78%)",
+            WebkitMaskImage:
+              "radial-gradient(ellipse 78% 62% at 50% 46%, transparent 8%, rgba(0,0,0,0.45) 46%, black 78%)",
           }}
-        />
-
-        {/* Eco esmeralda abajo a la izquierda, apenas insinuado */}
-        <div
-          className="animate-aurora-c absolute -inset-[8%] blur-[90px] md:blur-[130px]"
-          style={{
-            background:
-              "radial-gradient(ellipse 40% 32% at 8% 94%, rgba(45,212,167,0.06) 0%, transparent 70%)",
-            mixBlendMode: "screen",
-          }}
-        />
+        >
+          <ConstellationField />
+        </div>
 
         {/* Corredor central: oscurece donde vive el contenido */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 62% 48% at 50% 50%, rgba(4,9,7,0.62) 0%, rgba(4,9,7,0.30) 55%, transparent 85%)",
+              "radial-gradient(ellipse 62% 48% at 50% 50%, rgba(4,6,5,0.55) 0%, rgba(4,6,5,0.26) 55%, transparent 85%)",
             mixBlendMode: "multiply",
-          }}
-        />
-
-        {/* Reticula tipo tablero de caso: solo en el corredor central */}
-        <div
-          className="absolute inset-0 opacity-[0.55]"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, rgba(255,255,255,0.022) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.022) 1px, transparent 1px)",
-            backgroundSize: "72px 72px",
-            maskImage:
-              "radial-gradient(ellipse 75% 55% at 50% 45%, black 15%, transparent 75%)",
-            WebkitMaskImage:
-              "radial-gradient(ellipse 75% 55% at 50% 45%, black 15%, transparent 75%)",
           }}
         />
 
@@ -122,13 +103,13 @@ export default function AuraBackground({
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(140% 100% at 50% 50%, transparent 55%, rgba(3,6,5,0.55) 100%)",
+              "radial-gradient(140% 100% at 50% 50%, transparent 58%, rgba(3,5,4,0.5) 100%)",
           }}
         />
 
-        {/* Grano de pelicula */}
+        {/* Grano de pelicula, apenas perceptible */}
         <div
-          className="absolute inset-0 opacity-[0.05]"
+          className="absolute inset-0 opacity-[0.035]"
           style={{ mixBlendMode: "overlay" }}
         >
           <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">

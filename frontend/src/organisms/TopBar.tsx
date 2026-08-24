@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { Menu, PanelLeft, PanelLeftClose, PanelRightOpen } from "lucide-react";
+import { MorphIcon } from "@/atoms";
+import { ICON } from "@/lib/icons.ts";
 
 interface TopBarProps {
   title?: ReactNode;
@@ -7,6 +8,8 @@ interface TopBarProps {
   badges?: ReactNode;
   actions?: ReactNode;
   onOpenSidebar: () => void;
+  /** Cajon lateral abierto (movil): el icono del boton se pliega en una X. */
+  sidebarOpen?: boolean;
   /** Colapso del sidebar en desktop (el cajon movil usa onOpenSidebar). */
   sidebarCollapsed?: boolean;
   onToggleSidebar?: () => void;
@@ -24,6 +27,7 @@ export default function TopBar({
   badges,
   actions,
   onOpenSidebar,
+  sidebarOpen = false,
   sidebarCollapsed = false,
   onToggleSidebar,
   onOpenPanel,
@@ -40,9 +44,9 @@ export default function TopBar({
         type="button"
         onClick={onOpenSidebar}
         aria-label="Abrir menú"
-        className="-ml-1 shrink-0 rounded-lg p-2 text-text-muted transition-colors hover:bg-surface-hover hover:text-text lg:hidden"
+        className="-ml-1 shrink-0 rounded-md p-2 text-text-muted transition-colors hover:bg-surface-hover hover:text-text lg:hidden"
       >
-        <Menu className="h-5 w-5" />
+        <MorphIcon icon={sidebarOpen ? ICON.x : ICON.menu} size={18} />
       </button>
 
       {/* Colapsar/expandir el sidebar: solo desktop */}
@@ -52,13 +56,13 @@ export default function TopBar({
           onClick={onToggleSidebar}
           aria-label={sidebarCollapsed ? "Expandir menú" : "Contraer menú"}
           aria-expanded={!sidebarCollapsed}
-          className="-ml-1 hidden shrink-0 rounded-lg p-2 text-text-muted transition-colors hover:bg-surface-hover hover:text-text lg:inline-flex"
+          className="-ml-1 hidden shrink-0 rounded-md p-2 text-text-muted transition-colors hover:bg-surface-hover hover:text-text lg:inline-flex"
         >
-          {sidebarCollapsed ? (
-            <PanelLeft className="h-5 w-5" />
-          ) : (
-            <PanelLeftClose className="h-5 w-5" />
-          )}
+          {/* El panel se pliega y despliega en el propio icono */}
+          <MorphIcon
+            icon={sidebarCollapsed ? ICON.panelLeft : ICON.panelLeftClose}
+            size={18}
+          />
         </button>
       )}
 
@@ -84,9 +88,9 @@ export default function TopBar({
           <button
             type="button"
             onClick={onOpenPanel}
-            className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 text-sm font-medium text-text transition-colors hover:border-border-strong hover:bg-surface-hover lg:hidden"
+            className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-surface-2 px-3 text-sm text-text-muted transition-colors hover:border-border-strong hover:bg-surface-hover hover:text-text lg:hidden"
           >
-            <PanelRightOpen className="h-4 w-4" />
+            <MorphIcon icon={ICON.panelRightOpen} size={15} />
             <span className="hidden sm:inline">{panelLabel}</span>
           </button>
         )}

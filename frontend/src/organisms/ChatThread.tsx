@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import { Fingerprint } from "lucide-react";
-import { TypingDots, EmptyState } from "@/atoms";
+import { ThinkingOrbs, EmptyState } from "@/atoms";
 import { MessageBubble } from "@/molecules";
-import type { ChatMessage } from "@/hooks/chatTypes.ts";
+import type { ChatMessage, Pensamiento } from "@/hooks/chatTypes.ts";
 import {
   WelcomeMessageContent,
   UserActionContent,
@@ -20,6 +20,8 @@ import {
 interface ChatThreadProps {
   messages: ChatMessage[];
   isLoading: boolean;
+  /** Presentacion de la espera de la consulta en curso. */
+  thinking?: Pensamiento | null;
 }
 
 function formatHora(fecha: Date): string {
@@ -29,7 +31,11 @@ function formatHora(fecha: Date): string {
   });
 }
 
-export default function ChatThread({ messages, isLoading }: ChatThreadProps) {
+export default function ChatThread({
+  messages,
+  isLoading,
+  thinking,
+}: ChatThreadProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -52,10 +58,19 @@ export default function ChatThread({ messages, isLoading }: ChatThreadProps) {
         ))}
 
         {isLoading && (
-          <div className="flex items-start gap-3">
+          <div className="flex animate-fade-up items-start gap-3">
             <SystemAvatar />
-            <div className="rounded-2xl border border-border bg-surface px-4 py-3.5">
-              <TypingDots />
+            {/* Contenedor de espera: mismo ancho de burbuja que una respuesta,
+                con una linea de luz recorriendo el borde superior. */}
+            <div className="relative overflow-hidden rounded-md border border-border bg-surface px-4 py-3">
+              <span
+                aria-hidden="true"
+                className="animate-trace absolute left-0 top-0 h-px w-1/3 bg-gradient-to-r from-transparent via-accent to-transparent"
+              />
+              <ThinkingOrbs
+                state={thinking?.orbe}
+                label={thinking?.frases}
+              />
             </div>
           </div>
         )}
@@ -69,10 +84,10 @@ export default function ChatThread({ messages, isLoading }: ChatThreadProps) {
 function SystemAvatar() {
   return (
     <div
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-accent/25 bg-accent/12 text-accent"
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-accent/20 bg-accent/10 text-accent"
       aria-hidden="true"
     >
-      <Fingerprint className="h-4 w-4" />
+      <Fingerprint className="h-4 w-4" strokeWidth={1.75} />
     </div>
   );
 }

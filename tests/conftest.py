@@ -30,9 +30,9 @@ CASOS = ["caso1", "caso2", "caso3"]
 # Culpable esperado de cada caso, declarado en la propia base de conocimiento
 # mediante solucion/2. Las pruebas comparan la deduccion contra ese valor.
 SOLUCIONES = {
-    "caso1": "marco",
-    "caso2": "quim_sofia",
-    "caso3": "lic_vera",
+    "caso1": "peruggia",
+    "caso2": "kosminski",
+    "caso3": "yusupov",
 }
 
 

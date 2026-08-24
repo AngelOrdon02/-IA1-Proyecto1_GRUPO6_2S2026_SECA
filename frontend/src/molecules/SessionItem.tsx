@@ -43,21 +43,21 @@ export default function SessionItem({
       to={destino}
       aria-current={activo ? "page" : undefined}
       className={cn(
-        "group relative flex flex-col gap-1.5 rounded-lg border px-3 py-2.5 transition-colors duration-150",
+        "group relative flex flex-col gap-1 rounded-sm border px-3 py-2 transition-colors duration-150",
         activo
-          ? "border-accent/35 bg-accent/10"
+          ? "border-accent/30 bg-accent/8"
           : "border-transparent hover:border-border hover:bg-surface-hover",
         className,
       )}
     >
       {/* Marca lateral de sesion activa */}
       {activo && (
-        <span className="absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-r-full bg-accent" />
+        <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 bg-accent" />
       )}
       <div className="flex items-start justify-between gap-2">
         <span
           className={cn(
-            "min-w-0 flex-1 truncate text-sm font-medium",
+            "min-w-0 flex-1 truncate text-sm",
             activo ? "text-accent-soft" : "text-text",
           )}
         >

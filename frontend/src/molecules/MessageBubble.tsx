@@ -7,6 +7,9 @@ interface MessageBubbleProps {
   className?: string;
 }
 
+/* Esquina corta en lugar de la burbuja de 16px: el hilo pasa a leerse como
+   una bitacora de expediente y no como una app de mensajeria. La accion del
+   detective se distingue por el tinte del acento, no por el radio. */
 export default function MessageBubble({
   children,
   isUser = false,
@@ -16,12 +19,10 @@ export default function MessageBubble({
     <div className={cn("flex w-full", isUser ? "justify-end" : "justify-start")}>
       <div
         className={cn(
-          "rounded-2xl border px-4 py-3",
+          "rounded-md border px-4 py-3",
           isUser
-            ? /* Antes era un relleno pleno de acento en cada accion del usuario:
-                 demasiado peso visual y texto oscuro sobre color saturado. */
-              "max-w-[80%] border-accent/30 bg-accent/12 text-text"
-            : "max-w-[92%] border-border bg-surface shadow-sm shadow-black/20",
+            ? "max-w-[80%] border-accent/25 bg-accent/8 text-text"
+            : "max-w-[92%] border-border bg-surface",
           className,
         )}
       >

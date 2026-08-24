@@ -16,30 +16,30 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
 }
 
-/* El primario es la unica pieza con relleno de color en la UI: gradiente de
-   laton (luz de arriba) y hairline interna. Sin glow difuso: las sombras
-   borrosas alrededor del boton se perciben como suciedad, no como luz.
-   El hover sube brillo en vez de cambiar el color, asi el gradiente no se
-   aplana. */
+/* Rellenos planos. Los gradientes verticales y la hairline blanca interna
+   daban a cada boton un relieve de "boton fisico" que, repetido por toda la
+   pantalla, es justo lo que hacia pesada la interfaz. Ahora el peso lo lleva
+   solo el color: un unico primario esmeralda pleno, el resto en superficie
+   con borde. El hover cambia el color, no el brillo. */
 const variants: Record<ButtonVariant, string> = {
   primary:
-    "bg-gradient-to-b from-accent-soft to-accent text-accent-ink font-semibold shadow-[0_1px_0_rgba(255,255,255,0.35)_inset] hover:brightness-108 active:brightness-95",
+    "bg-accent text-accent-ink font-medium hover:bg-accent-soft active:bg-accent",
   secondary:
-    "bg-gradient-to-b from-surface-3 to-surface-2 text-text border border-border-strong shadow-card hover:border-border-strong hover:brightness-125",
+    "bg-surface-2 text-text border border-border hover:border-border-strong hover:bg-surface-hover",
   ghost:
-    "bg-transparent text-text-muted border border-border hover:bg-surface-hover hover:text-text hover:border-border-strong",
+    "bg-transparent text-text-muted hover:bg-surface-hover hover:text-text",
   danger:
-    "bg-danger text-accent-ink font-semibold shadow-[0_1px_0_rgba(255,255,255,0.22)_inset] hover:brightness-110 active:brightness-95",
+    "bg-danger text-accent-ink font-medium hover:bg-danger-soft active:bg-danger",
   accent:
-    "bg-success text-accent-ink font-semibold shadow-[0_1px_0_rgba(255,255,255,0.22)_inset] hover:brightness-110 active:brightness-95",
+    "bg-success text-accent-ink font-medium hover:bg-success-soft active:bg-success",
 };
 
-/* Alturas minimas de 36/40/44px: los botones anteriores quedaban por debajo
-   del area tactil recomendada. */
+/* Alturas de 32/36/40px: mas compactas que antes, que es lo que hace que una
+   herramienta se lea como herramienta, sin bajar del area tactil minima. */
 const sizes: Record<ButtonSize, string> = {
-  sm: "h-9 px-3 text-sm gap-1.5",
-  md: "h-10 px-4 text-sm gap-2",
-  lg: "h-11 px-5 text-base gap-2",
+  sm: "h-8 px-3 text-sm gap-1.5",
+  md: "h-9 px-3.5 text-sm gap-2",
+  lg: "h-10 px-4 text-sm gap-2",
 };
 
 export default function Button({
@@ -53,7 +53,7 @@ export default function Button({
   return (
     <button
       className={cn(
-        "inline-flex cursor-pointer items-center justify-center whitespace-nowrap rounded-lg transition-[background-color,border-color,filter,transform] duration-150 select-none",
+        "inline-flex cursor-pointer items-center justify-center whitespace-nowrap rounded-md transition-colors duration-150 select-none",
         "disabled:pointer-events-none disabled:opacity-45",
         "[&>svg]:shrink-0",
         variants[variant],

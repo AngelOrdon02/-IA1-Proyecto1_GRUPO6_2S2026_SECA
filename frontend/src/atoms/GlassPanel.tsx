@@ -13,7 +13,7 @@ export default function GlassPanel({
   return (
     <div
       className={cn(
-        "rounded-xl border border-border bg-glass backdrop-blur-xl",
+        "rounded-md border border-border bg-glass backdrop-blur-xl",
         className,
       )}
     >

@@ -67,7 +67,7 @@ export default function AppSidebar({
             type="button"
             onClick={onClose}
             aria-label="Cerrar menú"
-            className="shrink-0 rounded-lg p-2 text-text-dim transition-colors hover:bg-surface-hover hover:text-text lg:hidden"
+            className="shrink-0 rounded-sm p-2 text-text-dim transition-colors hover:bg-surface-hover hover:text-text lg:hidden"
           >
             <X className="h-5 w-5" />
           </button>
@@ -75,7 +75,7 @@ export default function AppSidebar({
 
         <div className="px-4 py-4">
           <Button variant="primary" block onClick={() => navigate("/")}>
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4" strokeWidth={2} />
             Nueva investigación
           </Button>
         </div>
@@ -84,7 +84,7 @@ export default function AppSidebar({
           <div className="mb-2 flex items-center justify-between px-2">
             <Link
               to="/historial"
-              className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-text-dim transition-colors hover:text-accent-soft"
+              className="flex items-center gap-1.5 text-xs font-medium tracking-[0.06em] text-text-dim uppercase transition-colors hover:text-accent-soft"
               title="Abrir historial completo con estadísticas"
             >
               <History className="h-3.5 w-3.5" />
@@ -92,7 +92,7 @@ export default function AppSidebar({
             </Link>
             <div className="flex items-center gap-1.5">
               {sesiones.length > 0 && (
-                <span className="rounded-full bg-surface-3 px-2 text-xs font-semibold tabular-nums text-text-muted">
+                <span className="rounded-xs bg-surface-3 px-1.5 text-xs tabular-nums text-text-muted">
                   {sesiones.length}
                 </span>
               )}
@@ -110,7 +110,7 @@ export default function AppSidebar({
               <Spinner />
             </div>
           ) : sesiones.length === 0 ? (
-            <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-xs text-text-dim">
+            <p className="rounded-md border border-dashed border-border px-3 py-6 text-center text-xs text-text-dim">
               Todavía no hay investigaciones. Inicia un caso para verlo aquí.
             </p>
           ) : (
@@ -136,9 +136,9 @@ export default function AppSidebar({
         <div className="border-t border-border p-3">
           <Link
             to="/admin"
-            className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-text-muted transition-colors hover:bg-surface-hover hover:text-text"
+            className="flex items-center gap-2.5 rounded-sm px-3 py-2 text-sm text-text-muted transition-colors hover:bg-surface-hover hover:text-text"
           >
-            <Settings className="h-4 w-4" />
+            <Settings className="h-4 w-4" strokeWidth={1.75} />
             Administración
           </Link>
         </div>

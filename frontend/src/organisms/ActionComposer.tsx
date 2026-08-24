@@ -1,15 +1,9 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
-import {
-  MessageSquare,
-  MapPin,
-  Fingerprint,
-  Lightbulb,
-  Scale,
-  Check,
-} from "lucide-react";
+import { Check } from "lucide-react";
 import { ActionChip } from "@/atoms";
 import { ActionPopover } from "@/molecules";
+import { ICON } from "@/lib/icons.ts";
 import type { Sospechoso, Lugar, Evidencia } from "@/api/types.ts";
 
 interface ActionComposerProps {
@@ -66,7 +60,7 @@ export default function ActionComposer({
           </p>
         ) : (
           <>
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-text-dim">
+            <p className="mb-2.5 text-xs font-medium tracking-[0.06em] text-text-dim uppercase">
               Acciones disponibles
             </p>
 
@@ -94,7 +88,7 @@ export default function ActionComposer({
                   </OptionList>
                 </ActionPopover>
                 <ActionChip
-                  icon={MessageSquare}
+                  icon={ICON.messageSquare}
                   label="Interrogar"
                   onClick={() => togglePopover("interrogar")}
                   disabled={disabled || sospechosos.length === 0}
@@ -127,7 +121,7 @@ export default function ActionComposer({
                   </OptionList>
                 </ActionPopover>
                 <ActionChip
-                  icon={MapPin}
+                  icon={ICON.mapPin}
                   label="Lugar"
                   onClick={() => togglePopover("lugar")}
                   disabled={disabled || lugares.length === 0}
@@ -159,7 +153,7 @@ export default function ActionComposer({
                   </OptionList>
                 </ActionPopover>
                 <ActionChip
-                  icon={Fingerprint}
+                  icon={ICON.fingerprint}
                   label="Examinar"
                   onClick={() => togglePopover("evidencia")}
                   disabled={disabled || evidencias.length === 0}
@@ -173,7 +167,7 @@ export default function ActionComposer({
               </div>
 
               <ActionChip
-                icon={Lightbulb}
+                icon={ICON.lightbulb}
                 label="Pista"
                 onClick={onSolicitarPista}
                 disabled={disabled || pistasRestantes <= 0}
@@ -187,7 +181,7 @@ export default function ActionComposer({
 
               <div className="ml-auto">
                 <ActionChip
-                  icon={Scale}
+                  icon={ICON.scale}
                   label="Acusar"
                   tone="danger"
                   onClick={onAcusar}
@@ -224,7 +218,7 @@ function OptionRow({
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-surface-hover"
+      className="flex items-center gap-3 rounded-sm px-3 py-2 text-left transition-colors hover:bg-surface-hover"
     >
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-medium text-text">

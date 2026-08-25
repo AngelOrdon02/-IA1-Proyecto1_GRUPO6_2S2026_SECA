@@ -315,6 +315,11 @@ def test_52_el_historial_calcula_estadisticas_y_permite_filtrar(cliente):
     assert "resueltas" in stats
     assert "tasa_exito" in stats
 
+    # Modo multicaso: estadisticas de resolucion desglosadas por caso.
+    por_caso = {c["caso"]: c for c in stats["por_caso"]}
+    assert "caso1" in por_caso
+    assert por_caso["caso1"]["correctas"] >= 1
+
     # Filtro por caso
     filtrado_caso = cliente.get("/api/historial?caso=caso1").json()
     assert all(s["caso"] == "caso1" for s in filtrado_caso["sesiones"])

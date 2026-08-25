@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
-import { AlertCircle, FileText, MapPin, Clock, Star } from "lucide-react";
+import { AlertCircle, FileText, MapPin, Clock, Star, Timer } from "lucide-react";
 import AuraBackground from "@/organisms/AuraBackground.tsx";
 import { ChatLayout } from "@/templates";
 import { ChatThread, ActionComposer, ExpedientePanel } from "@/organisms";
@@ -29,6 +29,10 @@ export default function InvestigacionPage() {
   const [loadingData, setLoadingData] = useState(true);
   // Opcional 2: puntuacion visible en la TopBar.
   const [puntuacion, setPuntuacion] = useState<number>(100);
+  // Opcional 3: temporizador. Marca de inicio y de cierre en ISO 8601 (UTC).
+  const [tiempoInicio, setTiempoInicio] = useState<string | null>(null);
+  const [tiempoCierre, setTiempoCierre] = useState<string | null>(null);
+  const [ahora, setAhora] = useState(() => Date.now());
 
   const {
     messages,
@@ -41,6 +45,10 @@ export default function InvestigacionPage() {
     investigarLugar,
     examinarEvidencia,
     solicitarPista,
+    analizarMotivos,
+    analizarOportunidades,
+    consultarRelaciones,
+    consultarExplicacion,
     acusar,
   } = useChat(sesionId ?? "");
   const [showAccusation, setShowAccusation] = useState(false);
@@ -57,6 +65,10 @@ export default function InvestigacionPage() {
 
         // Opcional 2: carga la puntuacion guardada en la sesion.
         setPuntuacion(sesionRes.sesion.puntuacion ?? 100);
+        // Opcional 3: base del temporizador (con respaldo en `iniciada`
+        // para sesiones creadas antes de que existiera tiempo_inicio).
+        setTiempoInicio(sesionRes.sesion.tiempo_inicio ?? sesionRes.sesion.iniciada);
+        setTiempoCierre(sesionRes.sesion.cerrada ?? null);
 
         const [fichaRes, sospechososRes, lugaresRes, evidenciasRes] =
           await Promise.all([
@@ -137,6 +149,28 @@ export default function InvestigacionPage() {
 
   const cerrada = estadoActual !== "en_curso";
 
+  // Opcional 3: el temporizador avanza cada segundo mientras la
+  // investigacion siga abierta y se congela al emitir la acusacion.
+  useEffect(() => {
+    if (cerrada) return;
+    const id = setInterval(() => setAhora(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [cerrada]);
+
+  const tiempoTexto = useMemo(() => {
+    if (!tiempoInicio) return null;
+    // El backend guarda ISO 8601 con zona (+00:00), que Date.parse entiende.
+    const inicio = Date.parse(tiempoInicio);
+    const fin = tiempoCierre ? Date.parse(tiempoCierre) : ahora;
+    const total = Math.max(0, Math.floor((fin - inicio) / 1000));
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    const mm = String(m).padStart(2, "0");
+    const ss = String(s).padStart(2, "0");
+    return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+  }, [tiempoInicio, tiempoCierre, ahora]);
+
   if (!sesionId) {
     return (
       <AuraBackground>
@@ -208,6 +242,16 @@ export default function InvestigacionPage() {
               <Star className="h-3 w-3" />
               {puntuacion} pts
             </span>
+            {/* Opcional 3: temporizador de la investigacion */}
+            {tiempoTexto && (
+              <span
+                className="inline-flex items-center gap-1 rounded-sm border border-border bg-surface-2 px-2 py-0.5 font-mono text-xs font-medium tabular-nums text-text-muted"
+                title={cerrada ? "Tiempo total de la investigacion" : "Tiempo transcurrido"}
+              >
+                <Timer className="h-3 w-3" />
+                {tiempoTexto}
+              </span>
+            )}
           </>
         }
         actions={
@@ -278,6 +322,22 @@ export default function InvestigacionPage() {
           }}
           onSolicitarPista={() => {
             solicitarPista();
+            aplicarPenalizacion();
+          }}
+          onAnalizarMotivos={() => {
+            analizarMotivos();
+            aplicarPenalizacion();
+          }}
+          onAnalizarOportunidades={() => {
+            analizarOportunidades();
+            aplicarPenalizacion();
+          }}
+          onConsultarRelaciones={() => {
+            consultarRelaciones();
+            aplicarPenalizacion();
+          }}
+          onConsultarExplicacion={() => {
+            consultarExplicacion();
             aplicarPenalizacion();
           }}
           onAcusar={() => setShowAccusation(true)}

@@ -11,6 +11,11 @@ import {
   Info,
   ShieldCheck,
   FolderOpen,
+  HeartCrack,
+  Columns3,
+  Link2,
+  BrainCircuit,
+  UserMinus,
 } from "lucide-react";
 import { Badge } from "@/atoms";
 import { CATEGORIA_LABELS, DIFICULTAD_LABELS } from "@/lib/constants.ts";
@@ -25,6 +30,10 @@ import type {
   ContradictionMessage,
   SuspicionMessage,
   VerdictMessage,
+  MotivesMessage,
+  PillarsMessage,
+  RelationsMessage,
+  ExplanationMessage,
   SystemMessage,
 } from "@/hooks/chatTypes.ts";
 
@@ -165,11 +174,11 @@ export function DeclarationContent({
             <Interna key={i}>
               <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
                 <dt className="text-text-dim">Lugar</dt>
-                <dd className="text-text">{c.Lugar}</dd>
+                <dd className="text-text">{c.LugarNombre ?? c.Lugar}</dd>
                 <dt className="text-text-dim">Hora</dt>
-                <dd className="text-text">{c.Hora}</dd>
+                <dd className="text-text">{c.HoraTexto ?? c.Hora}</dd>
                 <dt className="text-text-dim">Testigo</dt>
-                <dd className="text-text">{c.Testigo}</dd>
+                <dd className="text-text">{c.TestigoNombre ?? c.Testigo}</dd>
               </dl>
             </Interna>
           ))}
@@ -425,6 +434,197 @@ export function SystemContent({ message }: { message: SystemMessage }) {
     <div className="flex items-start gap-2.5">
       <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
       <p className="text-sm leading-relaxed text-text-muted">{message.text}</p>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+   Analisis del motor: motivos, pilares, relaciones y explicacion logica
+   --------------------------------------------------------------------------- */
+
+export function MotivesContent({ message }: { message: MotivesMessage }) {
+  return (
+    <div className="space-y-3">
+      <Encabezado icon={HeartCrack} tono="warning">
+        Motivos conocidos
+      </Encabezado>
+      {message.motivos.length === 0 ? (
+        <p className="text-sm leading-relaxed text-text-muted">
+          Aún no conoces ningún motivo. Interroga a los sospechosos: el motor
+          solo razona sobre lo que ya descubriste.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {message.motivos.map((m, i) => (
+            <Interna key={i}>
+              <div className="flex items-center gap-2">
+                <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">
+                  {m.Nombre}
+                </span>
+                <Badge variant="info">{m.Tipo.replace(/_/g, " ")}</Badge>
+              </div>
+              <p className="mt-1 text-sm leading-relaxed text-text-muted">
+                {m.Descripcion}
+              </p>
+            </Interna>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Celda si/no de la tabla de pilares. */
+function Pilarcito({ valor, label }: { valor: string; label: string }) {
+  const positivo = valor === "si" || valor === "valida";
+  return (
+    <span className="flex items-center justify-between gap-2 text-xs">
+      <span className="text-text-dim">{label}</span>
+      <span
+        className={
+          positivo ? "font-medium text-success-soft" : "font-medium text-text-dim"
+        }
+      >
+        {valor === "valida" ? "válida" : valor === "invalida" ? "inválida" : valor}
+      </span>
+    </span>
+  );
+}
+
+export function PillarsContent({ message }: { message: PillarsMessage }) {
+  return (
+    <div className="space-y-3">
+      <Encabezado icon={Columns3} tono="info">
+        Análisis de oportunidad: los cuatro pilares
+      </Encabezado>
+      <p className="text-xs text-text-dim">
+        Acceso, oportunidad, motivo y medios, más el estado de la coartada,
+        deducidos por el motor para cada sospechoso.
+      </p>
+      <div className="space-y-2">
+        {message.pilares.map((p) => (
+          <Interna key={p.Nombre}>
+            <p className="text-sm font-medium text-text">{p.Nombre}</p>
+            <div className="mt-1.5 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
+              <Pilarcito valor={p.Acceso} label="Acceso" />
+              <Pilarcito valor={p.Oportunidad} label="Oportunidad" />
+              <Pilarcito valor={p.Motivo} label="Motivo" />
+              <Pilarcito valor={p.Medios} label="Medios" />
+              <Pilarcito valor={p.Coartada} label="Coartada" />
+            </div>
+          </Interna>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function RelationsContent({ message }: { message: RelationsMessage }) {
+  return (
+    <div className="space-y-3">
+      <Encabezado icon={Link2} tono="info">
+        Relaciones entre los involucrados
+      </Encabezado>
+      {message.relaciones.length === 0 ? (
+        <p className="text-sm text-text-muted">
+          No hay relaciones registradas en este caso.
+        </p>
+      ) : (
+        <div className="space-y-1.5">
+          {message.relaciones.map((r, i) => (
+            <Interna key={i} className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-text">{r.NombreA}</span>
+              <Badge variant="info">{r.Tipo.replace(/_/g, " ")}</Badge>
+              <span className="text-sm text-text">{r.NombreB}</span>
+            </Interna>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function ExplanationContent({
+  message,
+}: {
+  message: ExplanationMessage;
+}) {
+  const { conclusion, reglas, descartes, complices } = message.explicacion;
+  const reglasUnicas = reglas.filter(
+    (r, i) => reglas.findIndex((x) => x.Id === r.Id) === i,
+  );
+  const resuelto = conclusion?.Estado === "resuelto";
+  return (
+    <div className="space-y-3">
+      <Encabezado icon={BrainCircuit}>Explicación lógica del motor</Encabezado>
+
+      <Interna>
+        {resuelto ? (
+          <p className="text-sm leading-relaxed text-text">
+            El responsable lógico del caso es{" "}
+            <strong className="font-semibold">
+              {conclusion?.NombreResponsable}
+            </strong>{" "}
+            con {conclusion?.Puntaje} puntos de sospecha. Estas son las reglas
+            que el motor activó para llegar a esa conclusión.
+          </p>
+        ) : (
+          <p className="text-sm leading-relaxed text-text-muted">
+            El motor aún no declara un responsable: la deducción es ambigua o
+            faltan pilares por sostener.
+          </p>
+        )}
+      </Interna>
+
+      {reglasUnicas.length > 0 && (
+        <div className="space-y-2">
+          <Rotulo>Reglas activadas</Rotulo>
+          <ul className="space-y-1.5">
+            {reglasUnicas.map((r, i) => (
+              <li key={i} className="flex gap-2.5 text-sm">
+                <span className="shrink-0 font-mono text-xs uppercase tabular-nums text-accent-soft">
+                  {r.Id}
+                </span>
+                <span className="min-w-0">
+                  <span className="font-medium text-text">{r.Nombre}.</span>{" "}
+                  <span className="text-text-muted">{r.Descripcion}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {descartes.length > 0 && (
+        <div className="space-y-2 border-t border-border pt-3">
+          <Rotulo>Descartes</Rotulo>
+          <ul className="space-y-1.5">
+            {descartes.map((d, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm">
+                <UserMinus className="mt-0.5 h-3.5 w-3.5 shrink-0 text-text-dim" />
+                <span>
+                  <span className="font-medium text-text">{d.Nombre}:</span>{" "}
+                  <span className="text-text-muted">{d.Texto}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {complices.length > 0 && (
+        <div className="space-y-2 border-t border-border pt-3">
+          <Rotulo>Posibles cómplices</Rotulo>
+          <ul className="space-y-1.5">
+            {complices.map((c, i) => (
+              <li key={i} className="text-sm">
+                <span className="font-medium text-text">{c.Nombre}:</span>{" "}
+                <span className="text-text-muted">{c.Texto}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

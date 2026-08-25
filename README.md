@@ -65,8 +65,9 @@ swipl prolog/logic_detective.pl
 .venv/bin/python -m pytest tests/ -v
 ```
 
-89 pruebas: motor de inferencia, integración Python-Prolog, descubrimiento
-progresivo, bitácora, resolución y seguridad. Hoy pasan todas.
+92 pruebas: motor de inferencia, integración Python-Prolog, descubrimiento
+progresivo, bitácora, resolución, seguridad y generador de casos. Hoy pasan
+todas.
 
 ## Los tres casos
 
@@ -87,8 +88,9 @@ Configurables con `LD_ADMIN_USER` y `LD_ADMIN_PASS`. **Cambiarlas antes de
 desplegar.**
 
 Permite consultar los casos con sus conteos, validar los mínimos, crear casos
-desde plantilla, editar el código Prolog con validación sintáctica previa,
-exportar, eliminar con respaldo y supervisar el historial de sesiones.
+desde plantilla, **generar casos completos a partir de JSON** (opcional 9),
+editar el código Prolog con validación sintáctica previa, exportar, eliminar
+con respaldo y supervisar el historial de sesiones.
 
 ## Configuración
 
@@ -137,7 +139,8 @@ docs/            Documentación técnica
 | Módulo de investigación (16 acciones) | Completo |
 | Módulo administrativo | Completo |
 | Docker y Docker Compose | Funcionales |
-| Pruebas automatizadas | 86 pasando |
+| Pruebas automatizadas | 92 pasando |
+| Opcionales del enunciado (10) | Completos: aleatorio, puntuación, temporizador, dificultad, pistas, grafo, PDF, historial, generador JSON, multicaso |
 | CI/CD (GitHub Actions) | **Pendiente** — no existe `.github/workflows/` |
 | Despliegue en la nube | Pendiente |
 | Manual con capturas | Pendiente |

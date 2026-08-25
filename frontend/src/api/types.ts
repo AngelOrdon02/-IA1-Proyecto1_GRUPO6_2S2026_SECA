@@ -30,6 +30,9 @@ export interface Sesion {
   veredicto: "correcto" | "incorrecto" | null;
   puntuacion?: number;
   tiempo_inicio?: string;
+  cerrada?: string | null;
+  /** Solo en el informe final: nombre legible del acusado. */
+  nombre_acusado?: string;
 }
 
 export interface Sospechoso {
@@ -55,6 +58,10 @@ export interface Coartada {
   Testigo: string;
   Estado: "valida" | "invalida";
   Motivo: string;
+  // El interrogatorio entrega ademas la version legible de cada campo.
+  LugarNombre?: string;
+  HoraTexto?: string;
+  TestigoNombre?: string;
 }
 
 export interface InterrogatorioResult {
@@ -115,9 +122,11 @@ export interface InvestigarLugarResult {
 }
 
 export interface Relacion {
-  Nombre1: string;
+  PersonaA: string;
+  PersonaB: string;
+  NombreA: string;
+  NombreB: string;
   Tipo: string;
-  Nombre2: string;
 }
 
 export interface Motivo {
@@ -326,9 +335,9 @@ export interface AcusarResponse {
   resultado: AcusacionResult;
 }
 
-export interface ExplicacionResponse {
+// La API devuelve el resultado aplanado: {ok, objetivo, conclusion, ...}.
+export interface ExplicacionResponse extends ExplicacionResult {
   ok: boolean;
-  explicacion: ExplicacionResult;
 }
 
 export interface InformeResponse {

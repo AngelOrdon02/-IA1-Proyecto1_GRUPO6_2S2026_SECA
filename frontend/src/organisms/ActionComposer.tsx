@@ -16,11 +16,15 @@ interface ActionComposerProps {
   onInvestigarLugar: (id: string, nombre: string) => void;
   onExaminarEvidencia: (id: string) => void;
   onSolicitarPista: () => void;
+  onAnalizarMotivos: () => void;
+  onAnalizarOportunidades: () => void;
+  onConsultarRelaciones: () => void;
+  onConsultarExplicacion: () => void;
   onAcusar: () => void;
   disabled?: boolean;
 }
 
-type PopoverType = "interrogar" | "lugar" | "evidencia" | null;
+type PopoverType = "interrogar" | "lugar" | "evidencia" | "analizar" | null;
 
 export default function ActionComposer({
   sospechosos,
@@ -32,6 +36,10 @@ export default function ActionComposer({
   onInvestigarLugar,
   onExaminarEvidencia,
   onSolicitarPista,
+  onAnalizarMotivos,
+  onAnalizarOportunidades,
+  onConsultarRelaciones,
+  onConsultarExplicacion,
   onAcusar,
   disabled = false,
 }: ActionComposerProps) {
@@ -163,6 +171,58 @@ export default function ActionComposer({
                       ? "Investiga lugares para encontrar evidencias"
                       : `${evidencias.length} evidencias disponibles`
                   }
+                />
+              </div>
+
+              <div className="relative">
+                <ActionPopover
+                  open={openPopover === "analizar"}
+                  onClose={() => setOpenPopover(null)}
+                  title="Analizar el caso"
+                  hint="Deducciones del motor sobre lo descubierto"
+                >
+                  <OptionList>
+                    <OptionRow
+                      onClick={() => {
+                        onAnalizarMotivos();
+                        setOpenPopover(null);
+                      }}
+                      title="Motivos"
+                      subtitle="Quién gana algo con el crimen"
+                    />
+                    <OptionRow
+                      onClick={() => {
+                        onAnalizarOportunidades();
+                        setOpenPopover(null);
+                      }}
+                      title="Oportunidades y pilares"
+                      subtitle="Acceso, oportunidad, motivo, medios y coartada"
+                    />
+                    <OptionRow
+                      onClick={() => {
+                        onConsultarRelaciones();
+                        setOpenPopover(null);
+                      }}
+                      title="Relaciones"
+                      subtitle="Vínculos entre los involucrados"
+                    />
+                    <OptionRow
+                      onClick={() => {
+                        onConsultarExplicacion();
+                        setOpenPopover(null);
+                      }}
+                      title="Explicación lógica"
+                      subtitle="Reglas activadas, descartes y cómplices"
+                    />
+                  </OptionList>
+                </ActionPopover>
+                <ActionChip
+                  icon={ICON.brainCircuit}
+                  label="Analizar"
+                  onClick={() => togglePopover("analizar")}
+                  disabled={disabled}
+                  active={openPopover === "analizar"}
+                  title="Consultas de análisis al motor de inferencia"
                 />
               </div>
 

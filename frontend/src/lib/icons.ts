@@ -11,6 +11,7 @@
  * sitio de uso se lea que hay una transicion, no dos iconos sueltos.
  */
 import {
+  BrainCircuit,
   Check,
   ChevronDown,
   ChevronUp,
@@ -33,6 +34,7 @@ import {
 } from "lucide";
 
 export const ICON = {
+  brainCircuit: BrainCircuit,
   check: Check,
   chevronDown: ChevronDown,
   chevronUp: ChevronUp,

@@ -14,6 +14,10 @@ import {
   ContradictionContent,
   SuspicionContent,
   VerdictContent,
+  MotivesContent,
+  PillarsContent,
+  RelationsContent,
+  ExplanationContent,
   SystemContent,
 } from "./ChatMessageContent.tsx";
 
@@ -145,6 +149,14 @@ function MessageContentSwitch({ message }: { message: ChatMessage }) {
       return <SuspicionContent message={message} />;
     case "verdict":
       return <VerdictContent message={message} />;
+    case "motives":
+      return <MotivesContent message={message} />;
+    case "pillars":
+      return <PillarsContent message={message} />;
+    case "relations":
+      return <RelationsContent message={message} />;
+    case "explanation":
+      return <ExplanationContent message={message} />;
     case "system":
       return <SystemContent message={message} />;
     default:

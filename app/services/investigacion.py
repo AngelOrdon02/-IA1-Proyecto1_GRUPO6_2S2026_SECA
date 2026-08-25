@@ -511,6 +511,10 @@ def informe_final(sesion: str) -> dict[str, Any]:
     caso = datos["caso"]
     engine = obtener_engine()
 
+    if datos.get("acusado"):
+        fila_nombre = engine.uno(f"nombre_de({caso}, {datos['acusado']}, Nombre)")
+        datos = {**datos, "nombre_acusado": fila_nombre["Nombre"] if fila_nombre else datos["acusado"]}
+
     return {
         "sesion": datos,
         "ficha": ficha_caso(caso),
@@ -544,9 +548,12 @@ def informe_final(sesion: str) -> dict[str, Any]:
         "descartes": engine.consultar(
             f"vista_descarte({caso}, Persona, Nombre, Texto)"
         ),
-        "reglas": engine.consultar(
-            f"vista_conclusion({caso}, _, Responsable, _, _), "
-            f"vista_explicacion({caso}, Responsable, Id, Nombre, Descripcion, Detalle)"
+        "reglas": _sin_duplicados(
+            engine.consultar(
+                f"vista_conclusion({caso}, _, Responsable, _, _), "
+                f"vista_explicacion({caso}, Responsable, Id, Nombre, Descripcion, Detalle)"
+            ),
+            "Id",
         ),
         "bitacora": db.leer_bitacora(sesion),
     }
@@ -912,7 +919,7 @@ def generar_informe_html(sesion: str) -> str:
     <div class="veredicto-box">
         <h3 style="margin: 0 0 8px 0; font-size: 18px;">{veredicto_title}</h3>
         <p style="margin: 0; font-size: 14px;">
-            Acusaste a <strong>{s.get('acusado', '-')}</strong>.
+            Acusaste a <strong>{s.get('nombre_acusado', s.get('acusado', '-'))}</strong>.
             El responsable deducido por el motor Prolog es <strong>{c.get('NombreResponsable', '-')}</strong> con <strong>{c.get('Puntaje', '0')} puntos</strong> de sospecha.
         </p>
     </div>

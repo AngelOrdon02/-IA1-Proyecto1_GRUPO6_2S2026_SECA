@@ -249,9 +249,9 @@ function RelacionesTab({ relaciones }: { relaciones: Relacion[] }) {
     <div className="space-y-2">
       {relaciones.map((r, i) => (
         <Fila key={i} className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-text">{r.Nombre1}</span>
+          <span className="text-text">{r.NombreA}</span>
           <Badge variant="info">{r.Tipo}</Badge>
-          <span className="text-text">{r.Nombre2}</span>
+          <span className="text-text">{r.NombreB}</span>
         </Fila>
       ))}
     </div>

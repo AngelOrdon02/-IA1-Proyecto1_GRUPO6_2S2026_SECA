@@ -191,6 +191,18 @@ def eliminar_caso(archivo: str) -> None:
         raise AccionInvalida(f"No existe el archivo {archivo}.")
     _respaldar(ruta)
     ruta.unlink()
+
+    # Si el cargador referencia el archivo eliminado hay que quitar la
+    # directiva: un ensure_loaded hacia un archivo inexistente dejaria la base
+    # de conocimiento entera sin cargar.
+    directiva = f":- ensure_loaded('casos/{ruta.stem}')."
+    carga = ARCHIVO_CARGA.read_text(encoding="utf-8")
+    if directiva in carga:
+        carga = "\n".join(
+            linea for linea in carga.splitlines() if linea.strip() != directiva
+        ) + "\n"
+        ARCHIVO_CARGA.write_text(carga, encoding="utf-8")
+
     reiniciar_engine()
 
 
@@ -270,3 +282,271 @@ conexion({caso}, lugar4, lugar5).
 % regla_caso({caso}, r01, 'Nombre', 'Que deduce esta regla').
 % nombre_de_la_regla({caso}, Persona) :- ...
 """
+
+
+# ---------------------------------------------------------------------------
+# Opcional 9: motor para generar casos nuevos a partir de JSON
+# ---------------------------------------------------------------------------
+#
+# El JSON describe el caso con listas planas (personas, lugares, evidencias,
+# declaraciones...) y este modulo lo traduce a hechos Prolog con el esquema de
+# prolog/core/esquema.pl. El archivo generado pasa por la misma validacion
+# sintactica que el editor manual antes de escribirse, y el motor se recarga
+# para que el caso quede disponible de inmediato.
+
+def _atomo_admin(valor: Any, campo: str) -> str:
+    """Valida un identificador del JSON como atomo Prolog en minuscula."""
+    if not isinstance(valor, str) or not re.match(r"^[a-z][a-zA-Z0-9_]*$", valor):
+        raise AccionInvalida(
+            f"El campo {campo} debe ser un identificador Prolog valido "
+            f"(minuscula inicial, letras/numeros/guion bajo): {valor!r}"
+        )
+    return valor
+
+
+def _texto_admin(valor: Any, campo: str) -> str:
+    """Escapa un texto libre para incrustarlo como atomo entre comillas."""
+    if not isinstance(valor, str) or not valor.strip():
+        raise AccionInvalida(f"El campo {campo} debe ser un texto no vacio.")
+    return valor.replace("\\", "\\\\").replace("'", "''")
+
+
+def _hora_admin(valor: Any, campo: str) -> int:
+    """Valida una hora en formato entero HHMM (ej. 2130 = 21:30)."""
+    if not isinstance(valor, int) or not (0 <= valor <= 2359) or valor % 100 >= 60:
+        raise AccionInvalida(
+            f"El campo {campo} debe ser una hora entera HHMM (0-2359): {valor!r}"
+        )
+    return valor
+
+
+def _afirmacion_prolog(caso: str, decl: str, af: dict[str, Any]) -> str:
+    """Traduce una afirmacion estructurada del JSON a un hecho afirma/3."""
+    tipo = af.get("tipo")
+    p = lambda campo: _atomo_admin(af.get(campo), f"declaraciones[].afirmaciones[].{campo}")
+    h = lambda campo: _hora_admin(af.get(campo), f"declaraciones[].afirmaciones[].{campo}")
+    if tipo == "estuvo":
+        termino = f"estuvo({p('persona')}, {p('lugar')}, {h('hora')})"
+    elif tipo == "no_estuvo":
+        termino = f"no_estuvo({p('persona')}, {p('lugar')}, {h('hora')})"
+    elif tipo == "vio":
+        termino = f"vio({p('observador')}, {p('observado')}, {p('lugar')}, {h('hora')})"
+    elif tipo == "poseia":
+        termino = f"poseia({p('persona')}, {p('objeto')})"
+    elif tipo == "desconoce":
+        termino = f"desconoce({p('persona')}, {p('objeto')})"
+    else:
+        raise AccionInvalida(
+            f"Tipo de afirmacion no soportado: {tipo!r}. "
+            "Usa estuvo, no_estuvo, vio, poseia o desconoce."
+        )
+    return f"afirma({caso}, {decl}, {termino})."
+
+
+def generar_caso_desde_json(datos: dict[str, Any]) -> dict[str, Any]:
+    """Genera, valida y registra un archivo de caso a partir de un JSON.
+
+    Devuelve el nombre del archivo, el conteo de elementos y si el caso cumple
+    los minimos del enunciado. El caso queda cargado en el motor.
+    """
+    if not isinstance(datos, dict):
+        raise AccionInvalida("El cuerpo debe ser un objeto JSON con el caso.")
+
+    caso = _validar_id(str(datos.get("id", "")))
+    titulo = _texto_admin(datos.get("titulo"), "titulo")
+    descripcion = _texto_admin(datos.get("descripcion"), "descripcion")
+    dificultad = datos.get("dificultad", "medio")
+    if dificultad not in {"facil", "medio", "dificil"}:
+        raise AccionInvalida("La dificultad debe ser facil, medio o dificil.")
+
+    ruta = _archivo_de(caso)
+    if ruta.exists():
+        raise AccionInvalida(f"Ya existe un archivo para el caso {caso}.")
+
+    engine = obtener_engine()
+    if caso in engine.valores("caso(Id, _, _, _)", "Id"):
+        raise AccionInvalida(f"El caso {caso} ya esta cargado en el motor.")
+
+    lineas: list[str] = [
+        "% " + "=" * 77,
+        f"% CASO: {datos.get('titulo')}",
+        "% Generado automaticamente desde JSON por el modulo administrativo.",
+        "% " + "=" * 77,
+        "",
+        f"caso({caso}, '{titulo}', '{descripcion}', {dificultad}).",
+        "",
+    ]
+
+    incidente = datos.get("incidente") or {}
+    lineas.append(
+        f"incidente({caso}, '{_texto_admin(incidente.get('descripcion'), 'incidente.descripcion')}', "
+        f"{_atomo_admin(incidente.get('lugar'), 'incidente.lugar')}, "
+        f"{_hora_admin(incidente.get('hora'), 'incidente.hora')})."
+    )
+    ventana = datos.get("ventana") or []
+    if not (isinstance(ventana, list) and len(ventana) == 2):
+        raise AccionInvalida("El campo ventana debe ser una lista [inicio, fin] en HHMM.")
+    lineas.append(
+        f"ventana_incidente({caso}, {_hora_admin(ventana[0], 'ventana[0]')}, "
+        f"{_hora_admin(ventana[1], 'ventana[1]')})."
+    )
+    lineas.append(f"victima({caso}, {_atomo_admin(datos.get('victima'), 'victima')}).")
+    if datos.get("solucion"):
+        lineas.append(f"solucion({caso}, {_atomo_admin(datos.get('solucion'), 'solucion')}).")
+    lineas.append("")
+
+    for p in datos.get("personas") or []:
+        rol = p.get("rol")
+        if rol not in {"sospechoso", "testigo", "victima"}:
+            raise AccionInvalida(f"Rol no valido en personas[]: {rol!r}")
+        lineas.append(
+            f"persona({caso}, {_atomo_admin(p.get('id'), 'personas[].id')}, "
+            f"'{_texto_admin(p.get('nombre'), 'personas[].nombre')}', {rol})."
+        )
+    lineas.append("")
+
+    for l in datos.get("lugares") or []:
+        lineas.append(
+            f"lugar({caso}, {_atomo_admin(l.get('id'), 'lugares[].id')}, "
+            f"'{_texto_admin(l.get('nombre'), 'lugares[].nombre')}', "
+            f"'{_texto_admin(l.get('descripcion'), 'lugares[].descripcion')}')."
+        )
+    for par in datos.get("conexiones") or []:
+        if not (isinstance(par, list) and len(par) == 2):
+            raise AccionInvalida("Cada conexion debe ser una lista [lugarA, lugarB].")
+        lineas.append(
+            f"conexion({caso}, {_atomo_admin(par[0], 'conexiones[][0]')}, "
+            f"{_atomo_admin(par[1], 'conexiones[][1]')})."
+        )
+    lineas.append("")
+
+    for a in datos.get("accesos") or []:
+        lineas.append(
+            f"acceso({caso}, {_atomo_admin(a.get('persona'), 'accesos[].persona')}, "
+            f"{_atomo_admin(a.get('lugar'), 'accesos[].lugar')}, "
+            f"{_atomo_admin(a.get('tipo'), 'accesos[].tipo')})."
+        )
+    for u in datos.get("ubicaciones") or []:
+        lineas.append(
+            f"estuvo_en({caso}, {_atomo_admin(u.get('persona'), 'ubicaciones[].persona')}, "
+            f"{_atomo_admin(u.get('lugar'), 'ubicaciones[].lugar')}, "
+            f"{_hora_admin(u.get('hora'), 'ubicaciones[].hora')})."
+        )
+    for ev in datos.get("eventos") or []:
+        lineas.append(
+            f"evento({caso}, {_atomo_admin(ev.get('id'), 'eventos[].id')}, "
+            f"{_hora_admin(ev.get('hora'), 'eventos[].hora')}, "
+            f"{_atomo_admin(ev.get('lugar'), 'eventos[].lugar')}, "
+            f"'{_texto_admin(ev.get('descripcion'), 'eventos[].descripcion')}')."
+        )
+    lineas.append("")
+
+    for e in datos.get("evidencias") or []:
+        eid = _atomo_admin(e.get("id"), "evidencias[].id")
+        lineas.append(
+            f"evidencia({caso}, {eid}, {_atomo_admin(e.get('tipo'), 'evidencias[].tipo')}, "
+            f"'{_texto_admin(e.get('descripcion'), 'evidencias[].descripcion')}', "
+            f"{_atomo_admin(e.get('lugar'), 'evidencias[].lugar')}, "
+            f"{_hora_admin(e.get('hora'), 'evidencias[].hora')})."
+        )
+        for persona in e.get("vincula") or []:
+            lineas.append(
+                f"vincula({caso}, {eid}, {_atomo_admin(persona, 'evidencias[].vincula[]')})."
+            )
+        situa = e.get("situa")
+        if situa:
+            lineas.append(
+                f"evidencia_lugar_persona({caso}, {eid}, "
+                f"{_atomo_admin(situa.get('persona'), 'evidencias[].situa.persona')}, "
+                f"{_atomo_admin(situa.get('lugar'), 'evidencias[].situa.lugar')})."
+            )
+    lineas.append("")
+
+    for d in datos.get("declaraciones") or []:
+        did = _atomo_admin(d.get("id"), "declaraciones[].id")
+        lineas.append(
+            f"declaracion({caso}, {did}, "
+            f"{_atomo_admin(d.get('autor'), 'declaraciones[].autor')}, "
+            f"'{_texto_admin(d.get('texto'), 'declaraciones[].texto')}')."
+        )
+        for af in d.get("afirmaciones") or []:
+            lineas.append(_afirmacion_prolog(caso, did, af))
+    lineas.append("")
+
+    for c in datos.get("coartadas") or []:
+        lineas.append(
+            f"coartada({caso}, {_atomo_admin(c.get('persona'), 'coartadas[].persona')}, "
+            f"{_atomo_admin(c.get('lugar'), 'coartadas[].lugar')}, "
+            f"{_hora_admin(c.get('hora'), 'coartadas[].hora')}, "
+            f"{_atomo_admin(c.get('testigo'), 'coartadas[].testigo')})."
+        )
+    for m in datos.get("motivos") or []:
+        lineas.append(
+            f"motivo({caso}, {_atomo_admin(m.get('persona'), 'motivos[].persona')}, "
+            f"{_atomo_admin(m.get('tipo'), 'motivos[].tipo')}, "
+            f"'{_texto_admin(m.get('descripcion'), 'motivos[].descripcion')}')."
+        )
+    for medio_req in datos.get("medios_requeridos") or []:
+        lineas.append(
+            f"requiere_medio({caso}, {_atomo_admin(medio_req, 'medios_requeridos[]')})."
+        )
+    for m in datos.get("medios") or []:
+        lineas.append(
+            f"medio({caso}, {_atomo_admin(m.get('persona'), 'medios[].persona')}, "
+            f"{_atomo_admin(m.get('medio'), 'medios[].medio')})."
+        )
+    for r in datos.get("relaciones") or []:
+        lineas.append(
+            f"relacion({caso}, {_atomo_admin(r.get('a'), 'relaciones[].a')}, "
+            f"{_atomo_admin(r.get('b'), 'relaciones[].b')}, "
+            f"{_atomo_admin(r.get('tipo'), 'relaciones[].tipo')})."
+        )
+    lineas.append("")
+
+    for r in datos.get("reglas") or []:
+        lineas.append(
+            f"regla_caso({caso}, {_atomo_admin(r.get('id'), 'reglas[].id')}, "
+            f"'{_texto_admin(r.get('nombre'), 'reglas[].nombre')}', "
+            f"'{_texto_admin(r.get('descripcion'), 'reglas[].descripcion')}')."
+        )
+    lineas.append("")
+
+    contenido = "\n".join(lineas)
+    error = _validar_sintaxis(contenido)
+    if error:
+        raise AccionInvalida(f"El caso generado tiene errores de sintaxis: {error}")
+
+    ruta.write_text(contenido, encoding="utf-8")
+
+    # Registrar el caso en el cargador para que el motor lo consulte.
+    carga = ARCHIVO_CARGA.read_text(encoding="utf-8")
+    directiva = f":- ensure_loaded('casos/{ruta.stem}')."
+    if directiva not in carga:
+        marcador = "% --- Casos de investigacion -"
+        indice = carga.find(marcador)
+        if indice == -1:
+            carga = carga.rstrip() + f"\n{directiva}\n"
+        else:
+            fin_bloque = carga.find("\n\n", indice)
+            carga = carga[:fin_bloque] + f"\n{directiva}" + carga[fin_bloque:]
+        _respaldar_carga = DIR_RESPALDOS / "logic_detective-previo.pl"
+        DIR_RESPALDOS.mkdir(parents=True, exist_ok=True)
+        _respaldar_carga.write_text(
+            ARCHIVO_CARGA.read_text(encoding="utf-8"), encoding="utf-8"
+        )
+        ARCHIVO_CARGA.write_text(carga, encoding="utf-8")
+
+    reiniciar_engine()
+    engine = obtener_engine()
+
+    fila = engine.uno(
+        f"conteo_caso({caso}, conteo(S, E, L, D, R))"
+    )
+    cumple = engine.es_cierto(f"cumple_minimos({caso})")
+    return {
+        "archivo": ruta.name,
+        "caso": caso,
+        "conteo": fila or {},
+        "cumple_minimos": cumple,
+        "casos": engine.valores("caso(Id, _, _, _)", "Id"),
+    }

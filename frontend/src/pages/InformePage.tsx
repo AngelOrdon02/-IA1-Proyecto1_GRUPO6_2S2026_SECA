@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   CheckCircle2,
   XCircle,
@@ -17,6 +17,7 @@ import {
   Printer,
   Network,
   History,
+  ArrowRight,
 } from "lucide-react";
 import AuraBackground from "@/organisms/AuraBackground.tsx";
 import { SuspicionBar } from "@/organisms/ChatMessageContent.tsx";
@@ -31,13 +32,17 @@ import {
   EmptyState,
 } from "@/atoms";
 import { api } from "@/api/client.ts";
-import type { InformeFinal } from "@/api/types.ts";
+import type { Caso, InformeFinal } from "@/api/types.ts";
 import { CATEGORIA_LABELS } from "@/lib/constants.ts";
 
 export default function InformePage() {
   const { sesion: sesionId } = useParams<{ sesion: string }>();
+  const navigate = useNavigate();
   const [informe, setInforme] = useState<InformeFinal | null>(null);
   const [loading, setLoading] = useState(true);
+  // Modo multicaso: el siguiente caso aun sin resolver, si lo hay.
+  const [siguienteCaso, setSiguienteCaso] = useState<Caso | null>(null);
+  const [abriendoSiguiente, setAbriendoSiguiente] = useState(false);
 
   useEffect(() => {
     if (!sesionId) return;
@@ -46,9 +51,28 @@ export default function InformePage() {
       .then((r) => {
         setInforme(r.informe);
         setLoading(false);
+        return api.casos();
+      })
+      .then((casosRes) => {
+        if (!casosRes) return;
+        setSiguienteCaso(
+          casosRes.casos.find((c) => c.estado !== "resuelto") ?? null,
+        );
       })
       .catch(() => setLoading(false));
   }, [sesionId]);
+
+  // Modo multicaso: abre una investigacion nueva con el siguiente caso.
+  const continuarSiguiente = async () => {
+    if (!siguienteCaso || abriendoSiguiente) return;
+    setAbriendoSiguiente(true);
+    try {
+      const res = await api.crearSesion(siguienteCaso.Id);
+      navigate(`/investigacion/${res.sesion}`);
+    } finally {
+      setAbriendoSiguiente(false);
+    }
+  };
 
   // Opcional 3: exportar el informe como PDF usando la impresión del navegador.
   const handlePrint = () => window.print();
@@ -94,13 +118,35 @@ export default function InformePage() {
           fuerza fondo blanco y texto negro para una salida PDF limpia. */}
       <style>{`
         @media print {
-          body > *:not(#informe-root) { display: none !important; }
-          #informe-root * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          body, #informe-root { background: white !important; color: black !important; }
+          /* React monta la app dentro de #root: ocultar los hijos directos
+             de body escondia tambien el informe y el PDF salia en blanco.
+             Con visibility, todo se oculta pero el subarbol del informe se
+             vuelve a mostrar, este donde este. */
+          body * { visibility: hidden; }
+          #informe-root, #informe-root * { visibility: visible; }
+          #informe-root {
+            position: absolute;
+            inset: 0 auto auto 0;
+            width: 100%;
+            padding: 0 !important;
+          }
           .print\\:hidden, [data-aura], canvas { display: none !important; }
-          * { box-shadow: none !important; text-shadow: none !important; }
+          /* La app es oscura: sobre papel se fuerza tinta oscura y fondo
+             blanco, conservando la semantica de los tonos de exito/peligro. */
+          body { background: white !important; }
+          #informe-root, #informe-root * {
+            background: transparent !important;
+            color: #1e293b !important;
+            border-color: #cbd5e1 !important;
+            box-shadow: none !important;
+            text-shadow: none !important;
+          }
+          #informe-root .text-success,
+          #informe-root .text-success-soft { color: #047857 !important; }
+          #informe-root .text-danger,
+          #informe-root .text-danger-soft { color: #b91c1c !important; }
           section, li, .informe-card { break-inside: avoid; }
-          @page { margin: 2cm; }
+          @page { size: A4 portrait; margin: 1.5cm; }
         }
       `}</style>
 
@@ -162,7 +208,7 @@ export default function InformePage() {
                 <p className="mt-1.5 leading-relaxed text-text-muted">
                   Acusaste a{" "}
                   <strong className="font-semibold text-text">
-                    {informe.sesion.acusado}
+                    {informe.sesion.nombre_acusado ?? informe.sesion.acusado}
                   </strong>
                   .
                   {informe.conclusion?.Estado === "resuelto" && (
@@ -393,8 +439,23 @@ export default function InformePage() {
 
           {/* Footer con acciones — oculto al imprimir */}
           <div className="mt-12 flex flex-wrap justify-center gap-3 border-t border-border pt-8 print:hidden">
+            {/* Modo multicaso: encadena la siguiente investigacion */}
+            {siguienteCaso && (
+              <Button
+                variant="primary"
+                onClick={continuarSiguiente}
+                disabled={abriendoSiguiente}
+              >
+                <ArrowRight className="h-4 w-4" />
+                {abriendoSiguiente
+                  ? "Abriendo…"
+                  : `Siguiente caso: ${siguienteCaso.Titulo}`}
+              </Button>
+            )}
             <Link to="/">
-              <Button variant="primary">Volver al inicio</Button>
+              <Button variant={siguienteCaso ? "secondary" : "primary"}>
+                Volver al inicio
+              </Button>
             </Link>
             {/* Opcional 3: exportar informe como PDF */}
             <Button variant="secondary" onClick={handlePrint}>

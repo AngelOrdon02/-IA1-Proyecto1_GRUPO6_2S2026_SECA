@@ -9,6 +9,10 @@ import type {
   NivelSospecha,
   AcusacionResult,
   BitacoraEntry,
+  Motivo,
+  Pilar,
+  Relacion,
+  ExplicacionResult,
 } from "@/api/types.ts";
 
 export type MessageType =
@@ -22,6 +26,10 @@ export type MessageType =
   | "contradiction"
   | "suspicion"
   | "verdict"
+  | "motives"
+  | "pillars"
+  | "relations"
+  | "explanation"
   | "system";
 
 export interface BaseMessage {
@@ -96,6 +104,26 @@ export interface VerdictMessage extends BaseMessage {
   resultado: AcusacionResult;
 }
 
+export interface MotivesMessage extends BaseMessage {
+  type: "motives";
+  motivos: Motivo[];
+}
+
+export interface PillarsMessage extends BaseMessage {
+  type: "pillars";
+  pilares: Pilar[];
+}
+
+export interface RelationsMessage extends BaseMessage {
+  type: "relations";
+  relaciones: Relacion[];
+}
+
+export interface ExplanationMessage extends BaseMessage {
+  type: "explanation";
+  explicacion: ExplicacionResult;
+}
+
 export interface SystemMessage extends BaseMessage {
   type: "system";
   text: string;
@@ -112,6 +140,10 @@ export type ChatMessage =
   | ContradictionMessage
   | SuspicionMessage
   | VerdictMessage
+  | MotivesMessage
+  | PillarsMessage
+  | RelationsMessage
+  | ExplanationMessage
   | SystemMessage;
 
 /**

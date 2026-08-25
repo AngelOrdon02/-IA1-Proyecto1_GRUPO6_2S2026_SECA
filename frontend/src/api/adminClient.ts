@@ -89,6 +89,19 @@ export const adminApi = {
       body: JSON.stringify(data),
     }),
 
+  // Opcional 9: genera un caso completo a partir de su descripcion en JSON.
+  generarCasoJson: (datos: unknown) =>
+    request<{
+      ok: boolean;
+      archivo: string;
+      caso: string;
+      cumple_minimos: boolean;
+      casos: string[];
+    }>("/api/admin/casos/generar", {
+      method: "POST",
+      body: JSON.stringify(datos),
+    }),
+
   eliminarCaso: (archivo: string) =>
     request<AdminEliminarResponse>("/api/admin/casos/eliminar", {
       method: "POST",

@@ -89,6 +89,13 @@ async def api_admin_crear_caso(datos: CrearCasoRequest, usuario: Autenticado):
     return {"ok": True, **resultado}
 
 
+@router.post("/casos/generar")
+async def api_admin_generar_caso(datos: dict, usuario: Autenticado):
+    """Opcional 9: genera un caso nuevo a partir de su descripcion en JSON."""
+    resultado = servicio.generar_caso_desde_json(datos)
+    return {"ok": True, **resultado}
+
+
 @router.post("/casos/eliminar")
 async def api_admin_eliminar_caso(datos: EliminarCasoRequest, usuario: Autenticado):
     servicio.eliminar_caso(datos.archivo)

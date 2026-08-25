@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   FileText,
+  FileJson,
   Plus,
   Trash2,
   RefreshCw,
@@ -34,6 +35,10 @@ export default function AdminPage() {
   const [sesiones, setSesiones] = useState<AdminSesion[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCrear, setShowCrear] = useState(false);
+  // Opcional 9: generador de casos desde JSON.
+  const [showGenerar, setShowGenerar] = useState(false);
+  const [jsonCaso, setJsonCaso] = useState("");
+  const [mensajeGenerar, setMensajeGenerar] = useState<string>("");
   const [errorMensaje, setErrorMensaje] = useState<string>("");
   const [nuevoCaso, setNuevoCaso] = useState({
     caso: "",
@@ -81,6 +86,34 @@ export default function AdminPage() {
       loadData();
     } catch (e) {
       setErrorMensaje(e instanceof Error ? e.message : "Error al crear caso");
+    }
+  }
+
+  // Opcional 9: envia el JSON al generador y recarga el listado.
+  async function handleGenerarJson() {
+    setMensajeGenerar("");
+    setErrorMensaje("");
+    let datos: unknown;
+    try {
+      datos = JSON.parse(jsonCaso);
+    } catch {
+      setErrorMensaje("El texto no es JSON válido.");
+      return;
+    }
+    try {
+      const res = await adminApi.generarCasoJson(datos);
+      setMensajeGenerar(
+        `Caso ${res.caso} generado en ${res.archivo}. ` +
+          (res.cumple_minimos
+            ? "Cumple los mínimos del enunciado."
+            : "Aviso: aún no cumple los mínimos del enunciado."),
+      );
+      setJsonCaso("");
+      loadData();
+    } catch (e) {
+      setErrorMensaje(
+        e instanceof Error ? e.message : "Error al generar el caso",
+      );
     }
   }
 
@@ -180,16 +213,66 @@ export default function AdminPage() {
               title="Casos cargados"
               count={casos.length}
               action={
-                <Button
-                  variant={showCrear ? "ghost" : "primary"}
-                  size="sm"
-                  onClick={() => setShowCrear(!showCrear)}
-                >
-                  <Plus className="h-4 w-4" />
-                  Nuevo caso
-                </Button>
+                <span className="flex gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setShowGenerar(!showGenerar)}
+                  >
+                    <FileJson className="h-4 w-4" />
+                    Generar desde JSON
+                  </Button>
+                  <Button
+                    variant={showCrear ? "ghost" : "primary"}
+                    size="sm"
+                    onClick={() => setShowCrear(!showCrear)}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Nuevo caso
+                  </Button>
+                </span>
               }
             />
+
+            {/* Opcional 9: motor de casos desde JSON */}
+            {showGenerar && (
+              <Card tone="raised" className="mb-4 animate-fade-up">
+                <h3 className="mb-1 font-semibold text-text">
+                  Generar caso desde JSON
+                </h3>
+                <p className="mb-3 text-sm text-text-muted">
+                  Pega la descripción del caso (personas, lugares, evidencias,
+                  declaraciones, coartadas, motivos, medios, relaciones y
+                  reglas). El servidor la traduce a hechos Prolog, valida la
+                  sintaxis y carga el caso en el motor.
+                </p>
+                <TextArea
+                  label="JSON del caso"
+                  value={jsonCaso}
+                  onChange={(e) => setJsonCaso(e.target.value)}
+                  placeholder='{"id": "caso4", "titulo": "…", "personas": […], …}'
+                  rows={12}
+                  className="font-mono text-xs"
+                />
+                {mensajeGenerar && (
+                  <p className="mt-3 text-sm text-success-soft">
+                    {mensajeGenerar}
+                  </p>
+                )}
+                <div className="mt-4 flex gap-2">
+                  <Button variant="primary" size="sm" onClick={handleGenerarJson}>
+                    Generar y cargar
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowGenerar(false)}
+                  >
+                    Cerrar
+                  </Button>
+                </div>
+              </Card>
+            )}
 
             {showCrear && (
               <Card tone="raised" className="mb-4 animate-fade-up">

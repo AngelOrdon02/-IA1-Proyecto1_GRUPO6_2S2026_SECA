@@ -149,6 +149,68 @@ export default function HistorialPage() {
               </div>
             )}
 
+            {/* Modo multicaso: estadisticas de resolucion POR CASO */}
+            {estadisticas && estadisticas.por_caso.length > 0 && (
+              <div className="mb-8 overflow-hidden rounded-md border border-border bg-surface">
+                <div className="border-b border-border px-4 py-3">
+                  <h2 className="text-sm font-medium text-text">
+                    Estadísticas por caso
+                  </h2>
+                  <p className="mt-0.5 text-xs text-text-dim">
+                    Modo multicaso: cómo te ha ido en cada expediente.
+                  </p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-text-dim">
+                        <th className="px-4 py-2 font-medium">Caso</th>
+                        <th className="px-4 py-2 font-medium">Partidas</th>
+                        <th className="px-4 py-2 font-medium">Correctas</th>
+                        <th className="px-4 py-2 font-medium">Incorrectas</th>
+                        <th className="px-4 py-2 font-medium">En curso</th>
+                        <th className="px-4 py-2 font-medium">Tasa de acierto</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {estadisticas.por_caso.map((c) => {
+                        const cerradas = c.correctas + c.incorrectas;
+                        const tasa =
+                          cerradas > 0
+                            ? Math.round((c.correctas / cerradas) * 100)
+                            : null;
+                        return (
+                          <tr
+                            key={c.caso}
+                            className="border-b border-border last:border-b-0"
+                          >
+                            <td className="px-4 py-2.5 font-medium text-text">
+                              {titulos[c.caso] ?? c.caso}
+                            </td>
+                            <td className="px-4 py-2.5 tabular-nums text-text-muted">
+                              {c.total}
+                            </td>
+                            <td className="px-4 py-2.5 tabular-nums text-success-soft">
+                              {c.correctas}
+                            </td>
+                            <td className="px-4 py-2.5 tabular-nums text-danger-soft">
+                              {c.incorrectas}
+                            </td>
+                            <td className="px-4 py-2.5 tabular-nums text-text-muted">
+                              {c.en_curso}
+                            </td>
+                            <td className="px-4 py-2.5 tabular-nums text-text">
+                              {tasa === null ? "—" : `${tasa}%`}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
             {/* Barra de Filtros y Búsqueda */}
             <div className="mb-6 flex flex-wrap items-center gap-3 rounded-md border border-border bg-surface p-4">
               <div className="min-w-[16rem] flex-1">

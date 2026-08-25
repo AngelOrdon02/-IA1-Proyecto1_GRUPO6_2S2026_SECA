@@ -64,6 +64,28 @@ const PENSAMIENTOS: Record<string, Pensamiento> = {
       "Contrastando tu acusacion con el responsable",
     ],
   },
+  motivos: {
+    orbe: "connecting",
+    frases: ["Repasando los interrogatorios", "Buscando quien gana con el crimen"],
+  },
+  oportunidades: {
+    orbe: "weaving",
+    frases: [
+      "Evaluando los cuatro pilares",
+      "Cruzando accesos, horarios y coartadas",
+    ],
+  },
+  relaciones: {
+    orbe: "connecting",
+    frases: ["Tejiendo el mapa de vinculos", "Siguiendo cada hilo entre personas"],
+  },
+  explicacion: {
+    orbe: "solving",
+    frases: [
+      "Recorriendo la cadena deductiva",
+      "Enumerando las reglas que se activaron",
+    ],
+  },
 };
 
 /**
@@ -258,6 +280,92 @@ export function useChat(sesionId: string) {
     }
   }, [sesionId, addMessage, setLoading, setError]);
 
+  /** Fabrica de acciones de analisis: mismo esqueleto, distinta consulta. */
+  const accionDeAnalisis = useCallback(
+    <T,>(
+      etiqueta: string,
+      pensamiento: Pensamiento,
+      consulta: () => Promise<T>,
+      construir: (res: T) => ChatMessage,
+    ) =>
+      async () => {
+        const userMsg: ChatMessage = {
+          id: generateId(),
+          type: "user_action",
+          timestamp: new Date(),
+          action: etiqueta,
+          target: "",
+        };
+        addMessage(userMsg);
+        setLoading(true, pensamiento);
+        try {
+          const res = await pensando(consulta());
+          addMessage(construir(res));
+        } catch (err) {
+          setError(
+            err instanceof Error ? err.message : `Error en: ${etiqueta}`,
+          );
+        } finally {
+          setLoading(false);
+        }
+      },
+    [addMessage, setLoading, setError],
+  );
+
+  const analizarMotivos = accionDeAnalisis(
+    "Analizar motivos",
+    PENSAMIENTOS.motivos,
+    () => api.motivos(sesionId),
+    (res) => ({
+      id: generateId(),
+      type: "motives",
+      timestamp: new Date(),
+      motivos: res.motivos,
+    }),
+  );
+
+  const analizarOportunidades = accionDeAnalisis(
+    "Analizar oportunidades",
+    PENSAMIENTOS.oportunidades,
+    () => api.oportunidades(sesionId),
+    (res) => ({
+      id: generateId(),
+      type: "pillars",
+      timestamp: new Date(),
+      pilares: res.pilares,
+    }),
+  );
+
+  const consultarRelaciones = accionDeAnalisis(
+    "Consultar relaciones",
+    PENSAMIENTOS.relaciones,
+    () => api.relaciones(sesionId),
+    (res) => ({
+      id: generateId(),
+      type: "relations",
+      timestamp: new Date(),
+      relaciones: res.relaciones,
+    }),
+  );
+
+  const consultarExplicacion = accionDeAnalisis(
+    "Consultar explicación lógica",
+    PENSAMIENTOS.explicacion,
+    () => api.explicacion(sesionId),
+    (res) => ({
+      id: generateId(),
+      type: "explanation",
+      timestamp: new Date(),
+      explicacion: {
+        objetivo: res.objetivo,
+        conclusion: res.conclusion,
+        reglas: res.reglas,
+        descartes: res.descartes,
+        complices: res.complices,
+      },
+    }),
+  );
+
   const acusar = useCallback(
     async (acusadoId: string, etiqueta?: string) => {
       const userMsg: ChatMessage = {
@@ -302,6 +410,10 @@ export function useChat(sesionId: string) {
     investigarLugar,
     examinarEvidencia,
     solicitarPista,
+    analizarMotivos,
+    analizarOportunidades,
+    consultarRelaciones,
+    consultarExplicacion,
     acusar,
   };
 }

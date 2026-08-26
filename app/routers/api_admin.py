@@ -66,6 +66,17 @@ async def api_admin_archivos(usuario: Autenticado):
     return {"ok": True, "archivos": servicio.listar_archivos()}
 
 
+@router.get("/ejemplos")
+async def api_admin_ejemplos(usuario: Autenticado):
+    """Casos de ejemplo en JSON para probar el generador."""
+    return {"ok": True, "ejemplos": servicio.listar_ejemplos()}
+
+
+@router.get("/ejemplos/{archivo}")
+async def api_admin_leer_ejemplo(archivo: str, usuario: Autenticado):
+    return {"ok": True, "archivo": archivo, "contenido": servicio.leer_ejemplo(archivo)}
+
+
 @router.get("/fuente/{archivo}")
 async def api_admin_leer_fuente(archivo: str, usuario: Autenticado):
     return {"ok": True, "archivo": archivo, "contenido": servicio.leer_fuente(archivo)}

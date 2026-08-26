@@ -1,0 +1,173 @@
+{
+  "id": "caso_biblioteca",
+  "titulo": "El manuscrito de la biblioteca",
+  "descripcion": "El manuscrito de Ubico desaparece de la vitrina de la Sala de Reservados durante el cierre nocturno. Cuatro personas tenian razones para quererlo y solo una pudo llegar hasta la vitrina.",
+  "dificultad": "medio",
+
+  "incidente": {
+    "descripcion": "La vitrina de la Sala de Reservados aparece forzada y el manuscrito ha desaparecido",
+    "lugar": "sala_reservados",
+    "hora": 2115
+  },
+  "ventana": [2045, 2145],
+  "victima": "navas",
+  "solucion": "duarte",
+
+  "personas": [
+    { "id": "navas",    "nombre": "Profesor Ernesto Navas", "rol": "victima" },
+    { "id": "duarte",   "nombre": "Ricardo Duarte",         "rol": "sospechoso" },
+    { "id": "salazar",  "nombre": "Irene Salazar",          "rol": "sospechoso" },
+    { "id": "mendez",   "nombre": "Hugo Mendez",            "rol": "sospechoso" },
+    { "id": "orozco",   "nombre": "Lucia Orozco",           "rol": "sospechoso" },
+    { "id": "conserje", "nombre": "Benito Ruano",           "rol": "testigo" },
+    { "id": "vigilante","nombre": "Marta Cifuentes",        "rol": "testigo" }
+  ],
+
+  "lugares": [
+    { "id": "sala_reservados", "nombre": "Sala de Reservados", "descripcion": "Sala cerrada con la vitrina del manuscrito." },
+    { "id": "pasillo_norte",   "nombre": "Pasillo norte",      "descripcion": "Unico corredor que comunica con Reservados." },
+    { "id": "deposito",        "nombre": "Deposito",           "descripcion": "Almacen de cajas y material de archivo." },
+    { "id": "recepcion",       "nombre": "Recepcion",          "descripcion": "Entrada principal, con el libro de visitas." },
+    { "id": "patio_interior",  "nombre": "Patio interior",     "descripcion": "Patio de servicio, salida de emergencia." }
+  ],
+  "conexiones": [
+    ["recepcion", "pasillo_norte"],
+    ["pasillo_norte", "sala_reservados"],
+    ["pasillo_norte", "deposito"],
+    ["deposito", "patio_interior"],
+    ["recepcion", "patio_interior"]
+  ],
+
+  "accesos": [
+    { "persona": "duarte",  "lugar": "recepcion",        "tipo": "gafete" },
+    { "persona": "duarte",  "lugar": "pasillo_norte",    "tipo": "llave_maestra" },
+    { "persona": "duarte",  "lugar": "sala_reservados",  "tipo": "llave_maestra" },
+    { "persona": "duarte",  "lugar": "deposito",         "tipo": "llave_maestra" },
+    { "persona": "salazar", "lugar": "recepcion",        "tipo": "gafete" },
+    { "persona": "salazar", "lugar": "pasillo_norte",    "tipo": "tarjeta_docente" },
+    { "persona": "salazar", "lugar": "sala_reservados",  "tipo": "tarjeta_docente" },
+    { "persona": "mendez",  "lugar": "recepcion",        "tipo": "gafete" },
+    { "persona": "mendez",  "lugar": "patio_interior",   "tipo": "gafete" },
+    { "persona": "mendez",  "lugar": "deposito",         "tipo": "gafete" },
+    { "persona": "orozco",  "lugar": "recepcion",        "tipo": "gafete" }
+  ],
+
+  "ubicaciones": [
+    { "persona": "duarte",  "lugar": "recepcion",       "hora": 2050 },
+    { "persona": "duarte",  "lugar": "pasillo_norte",   "hora": 2105 },
+    { "persona": "duarte",  "lugar": "sala_reservados", "hora": 2110 },
+    { "persona": "duarte",  "lugar": "deposito",        "hora": 2125 },
+    { "persona": "salazar", "lugar": "recepcion",       "hora": 2045 },
+    { "persona": "salazar", "lugar": "pasillo_norte",   "hora": 2100 },
+    { "persona": "mendez",  "lugar": "patio_interior",  "hora": 2055 },
+    { "persona": "mendez",  "lugar": "deposito",        "hora": 2130 },
+    { "persona": "orozco",  "lugar": "recepcion",       "hora": 2050 },
+    { "persona": "orozco",  "lugar": "recepcion",       "hora": 2120 }
+  ],
+
+  "eventos": [
+    { "id": "ev1", "hora": 2045, "lugar": "recepcion",       "descripcion": "El conserje anuncia el cierre en quince minutos." },
+    { "id": "ev2", "hora": 2100, "lugar": "pasillo_norte",   "descripcion": "Salazar y el conserje conversan junto a la escalera." },
+    { "id": "ev3", "hora": 2108, "lugar": "pasillo_norte",   "descripcion": "La camara capta una figura con guantes hacia Reservados." },
+    { "id": "ev4", "hora": 2112, "lugar": "sala_reservados", "descripcion": "El lector electronico registra una llave maestra." },
+    { "id": "ev5", "hora": 2115, "lugar": "sala_reservados", "descripcion": "Se fuerza la vitrina del manuscrito." },
+    { "id": "ev6", "hora": 2140, "lugar": "recepcion",       "descripcion": "El vigilante descubre la vitrina abierta." }
+  ],
+
+  "evidencias": [
+    { "id": "e01", "tipo": "huella_dactilar",   "descripcion": "Huella parcial en el cristal forzado de la vitrina.", "lugar": "sala_reservados", "hora": 2115,
+      "vincula": ["duarte"], "situa": { "persona": "duarte", "lugar": "sala_reservados" } },
+    { "id": "e02", "tipo": "fibra_textil",      "descripcion": "Fibras de lana gris identicas al saco de Duarte junto a la vitrina.", "lugar": "sala_reservados", "hora": 2115,
+      "vincula": ["duarte"] },
+    { "id": "e03", "tipo": "registro_acceso",   "descripcion": "El lector de Reservados registra la llave maestra numero 5 a las 21:12.", "lugar": "sala_reservados", "hora": 2112,
+      "vincula": ["duarte"] },
+    { "id": "e04", "tipo": "grabacion",         "descripcion": "Video del pasillo norte con una figura enguantada rumbo a Reservados.", "lugar": "pasillo_norte", "hora": 2108 },
+    { "id": "e05", "tipo": "colilla",           "descripcion": "Colilla con marca de labial en el descanso del pasillo norte.", "lugar": "pasillo_norte", "hora": 2100,
+      "vincula": ["salazar"], "situa": { "persona": "salazar", "lugar": "pasillo_norte" } },
+    { "id": "e06", "tipo": "guante",            "descripcion": "Un guante de archivo suelto sobre una caja del deposito.", "lugar": "deposito", "hora": 2130,
+      "vincula": ["mendez"], "situa": { "persona": "mendez", "lugar": "deposito" } },
+    { "id": "e07", "tipo": "nota_manuscrita",   "descripcion": "Nota con el numero de catalogo del manuscrito, sin firma.", "lugar": "deposito", "hora": 2050 },
+    { "id": "e08", "tipo": "registro_visitas",  "descripcion": "El libro de visitas registra la entrada y salida de Orozco.", "lugar": "recepcion", "hora": 2050,
+      "vincula": ["orozco"], "situa": { "persona": "orozco", "lugar": "recepcion" } },
+    { "id": "e09", "tipo": "huella_calzado",    "descripcion": "Pisadas mojadas hacia la salida de emergencia del patio.", "lugar": "patio_interior", "hora": 2135 },
+    { "id": "e10", "tipo": "cristal_roto",      "descripcion": "Astillas de cristal en el suelo, delante de la vitrina.", "lugar": "sala_reservados", "hora": 2115 },
+    { "id": "e11", "tipo": "correo_impreso",    "descripcion": "Correo impreso de un coleccionista ofreciendo pagar por el manuscrito a Duarte.", "lugar": "deposito", "hora": 2000,
+      "vincula": ["duarte"] },
+    { "id": "e12", "tipo": "llave_duplicada",   "descripcion": "Copia sin registrar de la llave de la vitrina, escondida tras una caja.", "lugar": "deposito", "hora": 2140,
+      "vincula": ["duarte"] }
+  ],
+
+  "declaraciones": [
+    { "id": "dec1", "autor": "duarte", "texto": "A esa hora estaba en el deposito revisando cajas. No entre a Reservados ni cruce el pasillo, y no se de que huella me hablan.",
+      "afirmaciones": [
+        { "tipo": "no_estuvo", "persona": "duarte", "lugar": "sala_reservados", "hora": 2115 },
+        { "tipo": "no_estuvo", "persona": "duarte", "lugar": "pasillo_norte",   "hora": 2105 },
+        { "tipo": "desconoce", "persona": "duarte", "objeto": "huella_dactilar" }
+      ] },
+    { "id": "dec2", "autor": "salazar", "texto": "Estuve en el pasillo norte hasta pasadas las nueve, conversando con el conserje.",
+      "afirmaciones": [
+        { "tipo": "estuvo", "persona": "salazar", "lugar": "pasillo_norte", "hora": 2100 }
+      ] },
+    { "id": "dec3", "autor": "mendez", "texto": "Sali al patio a fumar y despues baje al deposito a dejar unas cajas.",
+      "afirmaciones": [
+        { "tipo": "estuvo", "persona": "mendez", "lugar": "patio_interior", "hora": 2055 },
+        { "tipo": "estuvo", "persona": "mendez", "lugar": "deposito",       "hora": 2130 }
+      ] },
+    { "id": "dec4", "autor": "orozco", "texto": "Vi a Ricardo Duarte cruzar el pasillo norte hacia Reservados poco despues de las nueve.",
+      "afirmaciones": [
+        { "tipo": "vio", "observador": "orozco", "observado": "duarte", "lugar": "pasillo_norte", "hora": 2105 }
+      ] },
+    { "id": "dec5", "autor": "conserje", "texto": "Cerre la recepcion a las nueve y cuarenta. Irene Salazar estuvo conmigo en el pasillo todo ese rato.",
+      "afirmaciones": [
+        { "tipo": "estuvo", "persona": "salazar", "lugar": "pasillo_norte", "hora": 2100 }
+      ] },
+    { "id": "dec6", "autor": "vigilante", "texto": "El registro del lector marca una llave maestra abriendo Reservados justo antes de que sonara la alarma.",
+      "afirmaciones": [
+        { "tipo": "estuvo", "persona": "duarte", "lugar": "sala_reservados", "hora": 2115 }
+      ] }
+  ],
+
+  "coartadas": [
+    { "persona": "duarte",  "lugar": "deposito",       "hora": 2110, "testigo": "orozco" },
+    { "persona": "salazar", "lugar": "pasillo_norte",  "hora": 2100, "testigo": "conserje" },
+    { "persona": "mendez",  "lugar": "patio_interior", "hora": 2055, "testigo": "vigilante" },
+    { "persona": "orozco",  "lugar": "recepcion",      "hora": 2050, "testigo": "conserje" }
+  ],
+
+  "motivos": [
+    { "persona": "duarte",  "tipo": "financiero", "descripcion": "Debe una suma considerable y un coleccionista le ofrecio pagar por el manuscrito." },
+    { "persona": "salazar", "tipo": "academico",  "descripcion": "Compite con Navas por la catedra y el manuscrito sostiene la tesis de el." },
+    { "persona": "mendez",  "tipo": "laboral",    "descripcion": "Navas firmo su carta de despido el mes pasado." }
+  ],
+
+  "medios_requeridos": ["llave_vitrina", "guantes_de_archivo"],
+  "medios": [
+    { "persona": "duarte",  "medio": "llave_vitrina" },
+    { "persona": "duarte",  "medio": "guantes_de_archivo" },
+    { "persona": "salazar", "medio": "guantes_de_archivo" },
+    { "persona": "mendez",  "medio": "guantes_de_archivo" }
+  ],
+
+  "relaciones": [
+    { "a": "duarte",  "b": "navas",  "tipo": "deuda" },
+    { "a": "salazar", "b": "navas",  "tipo": "rivalidad" },
+    { "a": "mendez",  "b": "navas",  "tipo": "despido" },
+    { "a": "orozco",  "b": "navas",  "tipo": "colega" },
+    { "a": "duarte",  "b": "orozco", "tipo": "amistad" }
+  ],
+
+  "reglas": [
+    { "id": "r01", "nombre": "Acceso por llave maestra",      "descripcion": "Solo la llave maestra abre Reservados sin dejar el pasillo registrado." },
+    { "id": "r02", "nombre": "Corredor unico",                "descripcion": "Reservados solo se alcanza por el pasillo norte, asi que sin acceso al pasillo no hay acceso al manuscrito." },
+    { "id": "r03", "nombre": "Coartada de un sospechoso",     "descripcion": "Una coartada respaldada por otro sospechoso no sostiene nada." },
+    { "id": "r04", "nombre": "Huella sobre testimonio",       "descripcion": "La huella en la vitrina pesa mas que la negacion de haber estado ahi." },
+    { "id": "r05", "nombre": "Desconocimiento fingido",       "descripcion": "Decir que se desconoce una evidencia que lo vincula es informacion falsa." },
+    { "id": "r06", "nombre": "Doble medio obligatorio",       "descripcion": "El robo exige la llave de la vitrina y los guantes de archivo a la vez." },
+    { "id": "r07", "nombre": "Ventana de cierre",             "descripcion": "Solo cuenta como oportunidad estar en Reservados o en el pasillo entre 20:45 y 21:45." },
+    { "id": "r08", "nombre": "Distancia del deposito",        "descripcion": "El deposito no es adyacente a Reservados: estar ahi no da oportunidad." },
+    { "id": "r09", "nombre": "Testigo no sospechoso",         "descripcion": "Solo el conserje y el vigilante pueden respaldar una coartada valida." },
+    { "id": "r10", "nombre": "Motivo economico documentado",  "descripcion": "El correo del coleccionista convierte la deuda en un motivo economico concreto." },
+    { "id": "r11", "nombre": "Avistamiento cruzado",          "descripcion": "Un avistamiento en el pasillo desmiente a quien niega haber pasado por ahi." },
+    { "id": "r12", "nombre": "Llave duplicada",               "descripcion": "Una copia sin registrar de la llave de la vitrina acredita el medio, aunque aparezca despues." }
+  ]
+}

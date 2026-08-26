@@ -13,6 +13,7 @@ confirmarse con el tutor.
 
 from __future__ import annotations
 
+import json
 import re
 import shutil
 from datetime import datetime, timezone
@@ -26,6 +27,7 @@ from app.storage import db
 
 DIR_CASOS = config.RAIZ / "prolog" / "casos"
 DIR_RESPALDOS = config.RAIZ / "datos" / "respaldos"
+DIR_EJEMPLOS = config.RAIZ / "datos" / "ejemplos"
 ARCHIVO_CARGA = config.RAIZ / "prolog" / "logic_detective.pl"
 
 _ID_CASO = re.compile(r"^[a-z][a-z0-9_]{2,30}$")
@@ -102,6 +104,37 @@ def listar_archivos() -> list[str]:
     return sorted(ruta.name for ruta in DIR_CASOS.glob("*.pl"))
 
 
+def listar_ejemplos() -> list[dict[str, Any]]:
+    """Casos de ejemplo en JSON incluidos en el repositorio.
+
+    El panel los ofrece para probar el generador sin tener que escribir un caso
+    entero a mano. Ver datos/ejemplos/README.md para el esquema.
+    """
+    ejemplos = []
+    for ruta in sorted(DIR_EJEMPLOS.glob("*.json")):
+        try:
+            datos = json.loads(ruta.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        ejemplos.append(
+            {
+                "archivo": ruta.name,
+                "id": datos.get("id", ""),
+                "titulo": datos.get("titulo", ruta.stem),
+                "descripcion": datos.get("descripcion", ""),
+            }
+        )
+    return ejemplos
+
+
+def leer_ejemplo(archivo: str) -> str:
+    """Devuelve el JSON de un ejemplo, tal cual esta en disco."""
+    ruta = (DIR_EJEMPLOS / Path(archivo).name).resolve()
+    if ruta.parent != DIR_EJEMPLOS.resolve() or not ruta.exists():
+        raise AccionInvalida(f"No existe el ejemplo {archivo}.")
+    return ruta.read_text(encoding="utf-8")
+
+
 # ---------------------------------------------------------------------------
 # Modificacion
 # ---------------------------------------------------------------------------
@@ -165,14 +198,54 @@ def _validar_sintaxis(contenido: str) -> str | None:
     return None
 
 
+def _registrar_en_cargador(ruta: Path) -> None:
+    """Anade el ensure_loaded del caso a prolog/logic_detective.pl.
+
+    Sin esta directiva el archivo existe en disco pero el motor nunca lo
+    consulta: el caso no aparece en el panel ni se puede investigar, y no hay
+    ningun error que lo delate. Se respalda el cargador antes de tocarlo.
+    """
+    carga = ARCHIVO_CARGA.read_text(encoding="utf-8")
+    directiva = f":- ensure_loaded('casos/{ruta.stem}')."
+    if directiva in carga:
+        return
+
+    DIR_RESPALDOS.mkdir(parents=True, exist_ok=True)
+    (DIR_RESPALDOS / "logic_detective-previo.pl").write_text(carga, encoding="utf-8")
+
+    marcador = "% --- Casos de investigacion -"
+    indice = carga.find(marcador)
+    fin_bloque = carga.find("\n\n", indice) if indice != -1 else -1
+    if fin_bloque == -1:
+        carga = carga.rstrip() + f"\n{directiva}\n"
+    else:
+        carga = carga[:fin_bloque] + f"\n{directiva}" + carga[fin_bloque:]
+    ARCHIVO_CARGA.write_text(carga, encoding="utf-8")
+
+
+def _resumen_de(caso: str) -> dict[str, Any]:
+    """Conteo de elementos y cumplimiento de minimos de un caso ya cargado."""
+    engine = obtener_engine()
+    return {
+        "caso": caso,
+        "conteo": engine.uno(f"conteo_caso({caso}, conteo(S, E, L, D, R))") or {},
+        "cumple_minimos": engine.es_cierto(f"cumple_minimos({caso})"),
+        "casos": engine.valores("caso(Id, _, _, _)", "Id"),
+    }
+
+
 def crear_caso(caso: str, titulo: str, descripcion: str, dificultad: str) -> dict[str, Any]:
     """Crea el esqueleto de un caso nuevo a partir de la plantilla.
 
-    Genera un archivo con la estructura completa comentada, listo para que el
-    equipo lo rellene. No se registra en el cargador hasta que cumpla los
-    minimos: un caso incompleto romperia la validacion del enunciado.
+    Genera un archivo con la estructura completa comentada, lo registra en el
+    cargador y recarga el motor, para que el caso aparezca de inmediato en el
+    panel — incompleto y marcado como tal — y se pueda terminar de rellenar en
+    el editor. Dejarlo sin registrar, como se hacia antes, lo volvia invisible:
+    la creacion parecia no tener efecto y no habia error que lo explicara.
     """
     caso = _validar_id(caso)
+    if not (titulo or "").strip():
+        raise AccionInvalida("El titulo del caso no puede estar vacio.")
     if dificultad not in {"facil", "medio", "dificil"}:
         raise AccionInvalida("La dificultad debe ser facil, medio o dificil.")
 
@@ -180,8 +253,20 @@ def crear_caso(caso: str, titulo: str, descripcion: str, dificultad: str) -> dic
     if ruta.exists():
         raise AccionInvalida(f"Ya existe un archivo para el caso {caso}.")
 
-    ruta.write_text(_plantilla(caso, titulo, descripcion, dificultad), encoding="utf-8")
-    return {"archivo": ruta.name, "ruta": str(ruta)}
+    engine = obtener_engine()
+    if caso in engine.valores("caso(Id, _, _, _)", "Id"):
+        raise AccionInvalida(f"El caso {caso} ya esta cargado en el motor.")
+
+    contenido = _plantilla(caso, titulo, descripcion, dificultad)
+    error = _validar_sintaxis(contenido)
+    if error:
+        raise AccionInvalida(f"La plantilla generada no compila: {error}")
+
+    ruta.write_text(contenido, encoding="utf-8")
+    _registrar_en_cargador(ruta)
+    reiniciar_engine()
+
+    return {"archivo": ruta.name, "ruta": str(ruta), **_resumen_de(caso)}
 
 
 def eliminar_caso(archivo: str) -> None:
@@ -519,34 +604,7 @@ def generar_caso_desde_json(datos: dict[str, Any]) -> dict[str, Any]:
     ruta.write_text(contenido, encoding="utf-8")
 
     # Registrar el caso en el cargador para que el motor lo consulte.
-    carga = ARCHIVO_CARGA.read_text(encoding="utf-8")
-    directiva = f":- ensure_loaded('casos/{ruta.stem}')."
-    if directiva not in carga:
-        marcador = "% --- Casos de investigacion -"
-        indice = carga.find(marcador)
-        if indice == -1:
-            carga = carga.rstrip() + f"\n{directiva}\n"
-        else:
-            fin_bloque = carga.find("\n\n", indice)
-            carga = carga[:fin_bloque] + f"\n{directiva}" + carga[fin_bloque:]
-        _respaldar_carga = DIR_RESPALDOS / "logic_detective-previo.pl"
-        DIR_RESPALDOS.mkdir(parents=True, exist_ok=True)
-        _respaldar_carga.write_text(
-            ARCHIVO_CARGA.read_text(encoding="utf-8"), encoding="utf-8"
-        )
-        ARCHIVO_CARGA.write_text(carga, encoding="utf-8")
-
+    _registrar_en_cargador(ruta)
     reiniciar_engine()
-    engine = obtener_engine()
 
-    fila = engine.uno(
-        f"conteo_caso({caso}, conteo(S, E, L, D, R))"
-    )
-    cumple = engine.es_cierto(f"cumple_minimos({caso})")
-    return {
-        "archivo": ruta.name,
-        "caso": caso,
-        "conteo": fila or {},
-        "cumple_minimos": cumple,
-        "casos": engine.valores("caso(Id, _, _, _)", "Id"),
-    }
+    return {"archivo": ruta.name, **_resumen_de(caso)}

@@ -26,7 +26,7 @@ import {
 } from "@/atoms";
 import { BrandLogo } from "@/molecules";
 import { adminApi } from "@/api/adminClient.ts";
-import type { AdminCaso, AdminSesion } from "@/api/adminTypes.ts";
+import type { AdminCaso, AdminSesion, AdminEjemplo } from "@/api/adminTypes.ts";
 import { DIFICULTAD_LABELS, ESTADO_LABELS } from "@/lib/constants.ts";
 
 export default function AdminPage() {
@@ -38,7 +38,10 @@ export default function AdminPage() {
   // Opcional 9: generador de casos desde JSON.
   const [showGenerar, setShowGenerar] = useState(false);
   const [jsonCaso, setJsonCaso] = useState("");
+  const [ejemplos, setEjemplos] = useState<AdminEjemplo[]>([]);
   const [mensajeGenerar, setMensajeGenerar] = useState<string>("");
+  const [generando, setGenerando] = useState(false);
+  const [creando, setCreando] = useState(false);
   const [errorMensaje, setErrorMensaje] = useState<string>("");
   const [nuevoCaso, setNuevoCaso] = useState({
     caso: "",
@@ -59,12 +62,14 @@ export default function AdminPage() {
     try {
       setLoading(true);
       setErrorMensaje("");
-      const [casosRes, sesionesRes] = await Promise.all([
+      const [casosRes, sesionesRes, ejemplosRes] = await Promise.all([
         adminApi.casos(),
         adminApi.sesiones(),
+        adminApi.ejemplos(),
       ]);
       setCasos(casosRes.casos);
       setSesiones(sesionesRes.sesiones);
+      setEjemplos(ejemplosRes.ejemplos);
     } catch {
       navigate("/admin/login");
     } finally {
@@ -72,10 +77,14 @@ export default function AdminPage() {
     }
   }
 
+  // El caso nuevo nace como plantilla vacia: solo pide los cuatro campos de la
+  // ficha y el resto (personas, evidencias, declaraciones, reglas) se rellena
+  // en el editor, asi que se abre ahi directamente al crearlo.
   async function handleCrear() {
+    setErrorMensaje("");
+    setCreando(true);
     try {
-      setErrorMensaje("");
-      await adminApi.crearCaso(nuevoCaso);
+      const res = await adminApi.crearCaso(nuevoCaso);
       setShowCrear(false);
       setNuevoCaso({
         caso: "",
@@ -83,9 +92,25 @@ export default function AdminPage() {
         descripcion: "",
         dificultad: "medio",
       });
-      loadData();
+      navigate(`/admin/fuente/${res.archivo}`);
     } catch (e) {
       setErrorMensaje(e instanceof Error ? e.message : "Error al crear caso");
+    } finally {
+      setCreando(false);
+    }
+  }
+
+  // Carga uno de los JSON de datos/ejemplos/ en el area de texto.
+  async function handleCargarEjemplo(archivo: string) {
+    setErrorMensaje("");
+    setMensajeGenerar("");
+    try {
+      const res = await adminApi.leerEjemplo(archivo);
+      setJsonCaso(res.contenido);
+    } catch (e) {
+      setErrorMensaje(
+        e instanceof Error ? e.message : "Error al leer el ejemplo",
+      );
     }
   }
 
@@ -100,10 +125,14 @@ export default function AdminPage() {
       setErrorMensaje("El texto no es JSON válido.");
       return;
     }
+    setGenerando(true);
     try {
       const res = await adminApi.generarCasoJson(datos);
+      const c = res.conteo;
       setMensajeGenerar(
-        `Caso ${res.caso} generado en ${res.archivo}. ` +
+        `Caso ${res.caso} generado en ${res.archivo} ` +
+          `(${c.S ?? 0} sospechosos, ${c.E ?? 0} evidencias, ${c.L ?? 0} lugares, ` +
+          `${c.D ?? 0} declaraciones, ${c.R ?? 0} reglas). ` +
           (res.cumple_minimos
             ? "Cumple los mínimos del enunciado."
             : "Aviso: aún no cumple los mínimos del enunciado."),
@@ -114,6 +143,8 @@ export default function AdminPage() {
       setErrorMensaje(
         e instanceof Error ? e.message : "Error al generar el caso",
       );
+    } finally {
+      setGenerando(false);
     }
   }
 
@@ -246,6 +277,25 @@ export default function AdminPage() {
                   reglas). El servidor la traduce a hechos Prolog, valida la
                   sintaxis y carga el caso en el motor.
                 </p>
+                {ejemplos.length > 0 && (
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-text-dim">
+                      Cargar un ejemplo:
+                    </span>
+                    {ejemplos.map((ej) => (
+                      <Button
+                        key={ej.archivo}
+                        variant="ghost"
+                        size="sm"
+                        title={ej.descripcion || ej.archivo}
+                        onClick={() => handleCargarEjemplo(ej.archivo)}
+                      >
+                        <FileJson className="h-3.5 w-3.5" />
+                        {ej.titulo}
+                      </Button>
+                    ))}
+                  </div>
+                )}
                 <TextArea
                   label="JSON del caso"
                   value={jsonCaso}
@@ -260,7 +310,13 @@ export default function AdminPage() {
                   </p>
                 )}
                 <div className="mt-4 flex gap-2">
-                  <Button variant="primary" size="sm" onClick={handleGenerarJson}>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleGenerarJson}
+                    disabled={generando || !jsonCaso.trim()}
+                  >
+                    {generando && <Spinner size="sm" />}
                     Generar y cargar
                   </Button>
                   <Button
@@ -276,9 +332,16 @@ export default function AdminPage() {
 
             {showCrear && (
               <Card tone="raised" className="mb-4 animate-fade-up">
-                <h3 className="mb-4 font-semibold text-text">
+                <h3 className="mb-1 font-semibold text-text">
                   Crear caso nuevo
                 </h3>
+                <p className="mb-4 text-sm text-text-muted">
+                  Estos cuatro campos son solo la ficha del caso. Al crearlo se
+                  genera un archivo Prolog con la plantilla completa (personas,
+                  lugares, evidencias, declaraciones y reglas comentadas) y se
+                  abre el editor para rellenarlo. Si prefieres describir el caso
+                  entero de una vez, usa <strong>Generar desde JSON</strong>.
+                </p>
                 <div className="grid gap-4 md:grid-cols-2">
                   <Input
                     label="Identificador"
@@ -287,7 +350,7 @@ export default function AdminPage() {
                       setNuevoCaso({ ...nuevoCaso, caso: e.target.value })
                     }
                     placeholder="caso4_universidad"
-                    hint="Sin espacios; se usa como nombre del archivo Prolog."
+                    hint="Minúscula inicial, solo letras, números y guion bajo (3 a 31). Se usa como nombre del archivo Prolog."
                   />
                   <Input
                     label="Título"
@@ -323,8 +386,16 @@ export default function AdminPage() {
                   />
                 </div>
                 <div className="mt-5 flex gap-2">
-                  <Button variant="primary" size="sm" onClick={handleCrear}>
-                    Crear caso
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleCrear}
+                    disabled={
+                      creando || !nuevoCaso.caso.trim() || !nuevoCaso.titulo.trim()
+                    }
+                  >
+                    {creando && <Spinner size="sm" />}
+                    Crear y editar
                   </Button>
                   <Button
                     variant="ghost"

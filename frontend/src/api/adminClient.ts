@@ -8,6 +8,9 @@ import type {
   AdminSesionesResponse,
   AdminEliminarResponse,
   AdminLimpiarResponse,
+  AdminGenerarCasoResponse,
+  AdminEjemplosResponse,
+  AdminEjemploResponse,
 } from "./adminTypes.ts";
 
 class ApiError extends Error {
@@ -24,6 +27,38 @@ function getAuthHeader(): string | undefined {
   const creds = sessionStorage.getItem("admin_auth");
   if (creds) return `Basic ${creds}`;
   return undefined;
+}
+
+/** El backend responde {ok:false, error:"..."} o {detail:"..."}. Mostrar el
+ *  cuerpo crudo obligaba a leer JSON a ojo en la interfaz; aqui se extrae el
+ *  texto util y solo se cae al cuerpo entero si no tiene la forma esperada. */
+async function mensajeDeError(res: Response): Promise<string> {
+  const texto = await res.text();
+  if (!texto) return res.statusText || `Error ${res.status}`;
+  try {
+    const cuerpo = JSON.parse(texto) as {
+      error?: string;
+      detail?: unknown;
+    };
+    if (typeof cuerpo.error === "string") return cuerpo.error;
+    if (typeof cuerpo.detail === "string") return cuerpo.detail;
+    if (Array.isArray(cuerpo.detail)) {
+      // Errores de validacion de FastAPI: [{loc:[...], msg:"..."}, ...]
+      const partes = cuerpo.detail
+        .map((d) => {
+          const item = d as { loc?: unknown[]; msg?: string };
+          const campo = Array.isArray(item.loc)
+            ? item.loc.filter((x) => x !== "body").join(".")
+            : "";
+          return campo ? `${campo}: ${item.msg}` : item.msg;
+        })
+        .filter(Boolean);
+      if (partes.length) return partes.join(" · ");
+    }
+  } catch {
+    // No era JSON: se muestra tal cual.
+  }
+  return texto;
 }
 
 async function request<T>(
@@ -45,8 +80,7 @@ async function request<T>(
   }
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new ApiError(res.status, text || res.statusText);
+    throw new ApiError(res.status, await mensajeDeError(res));
   }
 
   return res.json() as Promise<T>;
@@ -91,16 +125,17 @@ export const adminApi = {
 
   // Opcional 9: genera un caso completo a partir de su descripcion en JSON.
   generarCasoJson: (datos: unknown) =>
-    request<{
-      ok: boolean;
-      archivo: string;
-      caso: string;
-      cumple_minimos: boolean;
-      casos: string[];
-    }>("/api/admin/casos/generar", {
+    request<AdminGenerarCasoResponse>("/api/admin/casos/generar", {
       method: "POST",
       body: JSON.stringify(datos),
     }),
+
+  // Casos de ejemplo en datos/ejemplos/, para probar el generador sin escribir
+  // un caso entero a mano.
+  ejemplos: () => request<AdminEjemplosResponse>("/api/admin/ejemplos"),
+
+  leerEjemplo: (archivo: string) =>
+    request<AdminEjemploResponse>(`/api/admin/ejemplos/${archivo}`),
 
   eliminarCaso: (archivo: string) =>
     request<AdminEliminarResponse>("/api/admin/casos/eliminar", {

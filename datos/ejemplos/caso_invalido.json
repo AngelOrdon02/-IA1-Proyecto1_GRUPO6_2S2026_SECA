@@ -1,0 +1,400 @@
+{
+  "id": "caso_roto",
+  "titulo": "Caso con errores a proposito",
+  "descripcion": "Caso con tres errores a proposito (hora 2575, identificador Ayala en mayuscula y afirmacion de tipo sospecho). Sirve para comprobar que el panel muestra el mensaje de error del servidor.",
+  "dificultad": "facil",
+  "incidente": {
+    "descripcion": "La caja fuerte del taller aparece vacia",
+    "lugar": "oficina",
+    "hora": 2575
+  },
+  "ventana": [
+    1830,
+    1930
+  ],
+  "victima": "molina",
+  "solucion": "ayala",
+  "personas": [
+    {
+      "id": "molina",
+      "nombre": "Don Molina",
+      "rol": "victima"
+    },
+    {
+      "id": "Ayala",
+      "nombre": "Ayala",
+      "rol": "sospechoso"
+    },
+    {
+      "id": "bran",
+      "nombre": "Bran",
+      "rol": "sospechoso"
+    },
+    {
+      "id": "cruz",
+      "nombre": "Cruz",
+      "rol": "sospechoso"
+    },
+    {
+      "id": "duran",
+      "nombre": "Duran",
+      "rol": "sospechoso"
+    },
+    {
+      "id": "tere",
+      "nombre": "Tere Guardia",
+      "rol": "testigo"
+    }
+  ],
+  "lugares": [
+    {
+      "id": "oficina",
+      "nombre": "Oficina",
+      "descripcion": "Area de oficina."
+    },
+    {
+      "id": "pasillo",
+      "nombre": "Pasillo",
+      "descripcion": "Area de pasillo."
+    },
+    {
+      "id": "taller",
+      "nombre": "Taller",
+      "descripcion": "Area de taller."
+    },
+    {
+      "id": "bodega",
+      "nombre": "Bodega",
+      "descripcion": "Area de bodega."
+    },
+    {
+      "id": "porton",
+      "nombre": "Porton",
+      "descripcion": "Area de porton."
+    }
+  ],
+  "conexiones": [
+    [
+      "porton",
+      "pasillo"
+    ],
+    [
+      "pasillo",
+      "oficina"
+    ],
+    [
+      "pasillo",
+      "taller"
+    ],
+    [
+      "taller",
+      "bodega"
+    ]
+  ],
+  "accesos": [
+    {
+      "persona": "ayala",
+      "lugar": "porton",
+      "tipo": "llave_del_taller"
+    },
+    {
+      "persona": "ayala",
+      "lugar": "pasillo",
+      "tipo": "llave_del_taller"
+    },
+    {
+      "persona": "ayala",
+      "lugar": "oficina",
+      "tipo": "llave_del_taller"
+    },
+    {
+      "persona": "ayala",
+      "lugar": "taller",
+      "tipo": "llave_del_taller"
+    },
+    {
+      "persona": "bran",
+      "lugar": "porton",
+      "tipo": "gafete"
+    },
+    {
+      "persona": "cruz",
+      "lugar": "porton",
+      "tipo": "gafete"
+    },
+    {
+      "persona": "duran",
+      "lugar": "porton",
+      "tipo": "gafete"
+    }
+  ],
+  "ubicaciones": [
+    {
+      "persona": "ayala",
+      "lugar": "oficina",
+      "hora": 1900
+    },
+    {
+      "persona": "bran",
+      "lugar": "porton",
+      "hora": 1900
+    },
+    {
+      "persona": "cruz",
+      "lugar": "bodega",
+      "hora": 1840
+    },
+    {
+      "persona": "duran",
+      "lugar": "porton",
+      "hora": 1910
+    }
+  ],
+  "eventos": [
+    {
+      "id": "ev1",
+      "hora": 1900,
+      "lugar": "oficina",
+      "descripcion": "La caja fuerte queda abierta y vacia."
+    },
+    {
+      "id": "ev2",
+      "hora": 1925,
+      "lugar": "porton",
+      "descripcion": "Don Molina descubre el faltante."
+    }
+  ],
+  "evidencias": [
+    {
+      "id": "t01",
+      "tipo": "indicio",
+      "descripcion": "Indicio numero 1 recogido en la oficina.",
+      "lugar": "oficina",
+      "hora": 1900,
+      "vincula": [
+        "ayala"
+      ],
+      "situa": {
+        "persona": "ayala",
+        "lugar": "oficina"
+      }
+    },
+    {
+      "id": "t02",
+      "tipo": "indicio",
+      "descripcion": "Indicio numero 2 recogido en la oficina.",
+      "lugar": "oficina",
+      "hora": 1900
+    },
+    {
+      "id": "t03",
+      "tipo": "indicio",
+      "descripcion": "Indicio numero 3 recogido en la oficina.",
+      "lugar": "oficina",
+      "hora": 1900
+    },
+    {
+      "id": "t04",
+      "tipo": "indicio",
+      "descripcion": "Indicio numero 4 recogido en la oficina.",
+      "lugar": "oficina",
+      "hora": 1900
+    },
+    {
+      "id": "t05",
+      "tipo": "indicio",
+      "descripcion": "Indicio numero 5 recogido en la oficina.",
+      "lugar": "oficina",
+      "hora": 1900
+    },
+    {
+      "id": "t06",
+      "tipo": "indicio",
+      "descripcion": "Indicio numero 6 recogido en la oficina.",
+      "lugar": "oficina",
+      "hora": 1900
+    },
+    {
+      "id": "t07",
+      "tipo": "indicio",
+      "descripcion": "Indicio numero 7 recogido en la oficina.",
+      "lugar": "oficina",
+      "hora": 1900
+    },
+    {
+      "id": "t08",
+      "tipo": "indicio",
+      "descripcion": "Indicio numero 8 recogido en la oficina.",
+      "lugar": "oficina",
+      "hora": 1900
+    },
+    {
+      "id": "t09",
+      "tipo": "indicio",
+      "descripcion": "Indicio numero 9 recogido en la oficina.",
+      "lugar": "oficina",
+      "hora": 1900
+    },
+    {
+      "id": "t10",
+      "tipo": "indicio",
+      "descripcion": "Indicio numero 10 recogido en la oficina.",
+      "lugar": "oficina",
+      "hora": 1900
+    }
+  ],
+  "declaraciones": [
+    {
+      "id": "d1",
+      "autor": "ayala",
+      "texto": "Yo ya me habia ido; no entre a la oficina.",
+      "afirmaciones": [
+        {
+          "tipo": "no_estuvo",
+          "persona": "ayala",
+          "lugar": "oficina",
+          "hora": 1900
+        }
+      ]
+    },
+    {
+      "id": "d2",
+      "autor": "bran",
+      "texto": "Estuve fumando en el porton todo el rato.",
+      "afirmaciones": [
+        {
+          "tipo": "estuvo",
+          "persona": "bran",
+          "lugar": "porton",
+          "hora": 1900
+        }
+      ]
+    },
+    {
+      "id": "d3",
+      "autor": "cruz",
+      "texto": "Estaba ordenando la bodega.",
+      "afirmaciones": [
+        {
+          "tipo": "sospecho",
+          "persona": "cruz"
+        }
+      ]
+    },
+    {
+      "id": "d4",
+      "autor": "duran",
+      "texto": "Llegue tarde, apenas entraba por el porton.",
+      "afirmaciones": []
+    },
+    {
+      "id": "d5",
+      "autor": "tere",
+      "texto": "Vi salir a Ayala de la oficina con un sobre.",
+      "afirmaciones": [
+        {
+          "tipo": "vio",
+          "observador": "tere",
+          "observado": "ayala",
+          "lugar": "oficina",
+          "hora": 1900
+        }
+      ]
+    }
+  ],
+  "coartadas": [
+    {
+      "persona": "bran",
+      "lugar": "porton",
+      "hora": 1900,
+      "testigo": "tere"
+    },
+    {
+      "persona": "cruz",
+      "lugar": "bodega",
+      "hora": 1840,
+      "testigo": "tere"
+    },
+    {
+      "persona": "duran",
+      "lugar": "porton",
+      "hora": 1910,
+      "testigo": "tere"
+    }
+  ],
+  "motivos": [
+    {
+      "persona": "ayala",
+      "tipo": "financiero",
+      "descripcion": "Le deben tres quincenas y necesita el dinero."
+    }
+  ],
+  "medios_requeridos": [
+    "clave_de_la_caja"
+  ],
+  "medios": [
+    {
+      "persona": "ayala",
+      "medio": "clave_de_la_caja"
+    }
+  ],
+  "relaciones": [
+    {
+      "a": "ayala",
+      "b": "molina",
+      "tipo": "deuda"
+    }
+  ],
+  "reglas": [
+    {
+      "id": "tr01",
+      "nombre": "Regla 1 del taller",
+      "descripcion": "Descripcion de la regla 1 propia del caso."
+    },
+    {
+      "id": "tr02",
+      "nombre": "Regla 2 del taller",
+      "descripcion": "Descripcion de la regla 2 propia del caso."
+    },
+    {
+      "id": "tr03",
+      "nombre": "Regla 3 del taller",
+      "descripcion": "Descripcion de la regla 3 propia del caso."
+    },
+    {
+      "id": "tr04",
+      "nombre": "Regla 4 del taller",
+      "descripcion": "Descripcion de la regla 4 propia del caso."
+    },
+    {
+      "id": "tr05",
+      "nombre": "Regla 5 del taller",
+      "descripcion": "Descripcion de la regla 5 propia del caso."
+    },
+    {
+      "id": "tr06",
+      "nombre": "Regla 6 del taller",
+      "descripcion": "Descripcion de la regla 6 propia del caso."
+    },
+    {
+      "id": "tr07",
+      "nombre": "Regla 7 del taller",
+      "descripcion": "Descripcion de la regla 7 propia del caso."
+    },
+    {
+      "id": "tr08",
+      "nombre": "Regla 8 del taller",
+      "descripcion": "Descripcion de la regla 8 propia del caso."
+    },
+    {
+      "id": "tr09",
+      "nombre": "Regla 9 del taller",
+      "descripcion": "Descripcion de la regla 9 propia del caso."
+    },
+    {
+      "id": "tr10",
+      "nombre": "Regla 10 del taller",
+      "descripcion": "Descripcion de la regla 10 propia del caso."
+    }
+  ]
+}

@@ -134,3 +134,142 @@ def test_54_el_generador_rechaza_identificadores_invalidos(cliente):
 def test_55_el_generador_exige_autenticacion(cliente):
     respuesta = cliente.post("/api/admin/casos/generar", json=_caso_json())
     assert respuesta.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# Creacion de un caso vacio desde el formulario del panel
+# ---------------------------------------------------------------------------
+
+def test_56_crear_caso_registra_el_esqueleto_y_lo_deja_visible(cliente):
+    """El caso nuevo debe aparecer en el panel, aunque este incompleto.
+
+    Regresion: el servicio escribia el .pl pero no anadia su ensure_loaded al
+    cargador, asi que el motor nunca veia el caso. La creacion devolvia 200, la
+    interfaz no mostraba error y el caso simplemente no aparecia por ninguna
+    parte.
+    """
+    nuevo = {
+        "caso": "caso_esqueleto",
+        "titulo": "El expediente en blanco",
+        "descripcion": "Creado desde el formulario del panel.",
+        "dificultad": "facil",
+    }
+    respuesta = cliente.post("/api/admin/casos", json=nuevo, auth=CREDENCIALES)
+    try:
+        assert respuesta.status_code == 200, respuesta.text
+        datos = respuesta.json()
+        assert datos["archivo"] == "caso_esqueleto.pl"
+        assert "caso_esqueleto" in datos["casos"]
+
+        # La plantilla trae sospechosos y lugares, pero no evidencias ni reglas:
+        # el panel debe poder mostrarla marcada como incompleta.
+        assert datos["cumple_minimos"] is False
+        assert int(datos["conteo"]["S"]) >= 4
+
+        listado = cliente.get("/api/admin/casos", auth=CREDENCIALES).json()["casos"]
+        creado = next((c for c in listado if c["Id"] == "caso_esqueleto"), None)
+        assert creado is not None
+        assert creado["archivo"] == "caso_esqueleto.pl"
+        assert creado["cumple"] is False
+    finally:
+        cliente.post(
+            "/api/admin/casos/eliminar",
+            json={"archivo": "caso_esqueleto.pl"},
+            auth=CREDENCIALES,
+        )
+
+    restantes = cliente.get("/api/casos").json()["casos"]
+    assert sorted(c["Id"] for c in restantes) == CASOS
+
+
+def test_57_crear_caso_rechaza_los_datos_invalidos_con_un_mensaje(cliente):
+    """Un identificador o una dificultad invalidos deben explicar el motivo."""
+    base = {
+        "caso": "caso_esqueleto",
+        "titulo": "El expediente en blanco",
+        "descripcion": "",
+        "dificultad": "facil",
+    }
+
+    malo = {**base, "caso": "Caso Con Espacios"}
+    respuesta = cliente.post("/api/admin/casos", json=malo, auth=CREDENCIALES)
+    assert respuesta.status_code == 400
+    assert "identificador" in respuesta.json()["error"].lower()
+
+    sin_titulo = {**base, "titulo": "   "}
+    respuesta = cliente.post("/api/admin/casos", json=sin_titulo, auth=CREDENCIALES)
+    assert respuesta.status_code == 400
+    assert "titulo" in respuesta.json()["error"].lower()
+
+    dificultad_mala = {**base, "dificultad": "imposible"}
+    respuesta = cliente.post("/api/admin/casos", json=dificultad_mala, auth=CREDENCIALES)
+    assert respuesta.status_code == 400
+
+    duplicado = {**base, "caso": "caso1"}
+    respuesta = cliente.post("/api/admin/casos", json=duplicado, auth=CREDENCIALES)
+    assert respuesta.status_code == 400
+
+    # Ninguno de los rechazos debe haber dejado archivos sueltos.
+    archivos = cliente.get("/api/admin/archivos", auth=CREDENCIALES).json()["archivos"]
+    assert "caso_esqueleto.pl" not in archivos
+
+
+# ---------------------------------------------------------------------------
+# Casos de ejemplo en JSON (datos/ejemplos/)
+# ---------------------------------------------------------------------------
+
+def test_58_los_ejemplos_json_se_listan_y_generan_un_caso_resoluble(cliente):
+    """El panel ofrece JSON de ejemplo listos para probar el generador."""
+    import json
+
+    listado = cliente.get("/api/admin/ejemplos", auth=CREDENCIALES)
+    assert listado.status_code == 200
+    ejemplos = {e["archivo"]: e for e in listado.json()["ejemplos"]}
+    assert "caso_biblioteca.json" in ejemplos
+    assert ejemplos["caso_biblioteca.json"]["id"] == "caso_biblioteca"
+
+    contenido = cliente.get(
+        "/api/admin/ejemplos/caso_biblioteca.json", auth=CREDENCIALES
+    ).json()["contenido"]
+    caso = json.loads(contenido)
+
+    respuesta = cliente.post("/api/admin/casos/generar", json=caso, auth=CREDENCIALES)
+    try:
+        assert respuesta.status_code == 200, respuesta.text
+        assert respuesta.json()["cumple_minimos"] is True
+
+        from app.prolog.engine import obtener_engine
+        engine = obtener_engine()
+        assert engine.es_cierto("responsable(caso_biblioteca, duarte)")
+        assert engine.es_cierto("coartada_valida(caso_biblioteca, salazar)")
+        assert engine.es_cierto("mintio(caso_biblioteca, duarte)")
+    finally:
+        cliente.post(
+            "/api/admin/casos/eliminar",
+            json={"archivo": "caso_biblioteca.pl"},
+            auth=CREDENCIALES,
+        )
+
+
+def test_59_el_ejemplo_invalido_devuelve_un_error_explicado(cliente):
+    """caso_invalido.json existe para comprobar el camino de error del panel."""
+    import json
+
+    contenido = cliente.get(
+        "/api/admin/ejemplos/caso_invalido.json", auth=CREDENCIALES
+    ).json()["contenido"]
+
+    respuesta = cliente.post(
+        "/api/admin/casos/generar", json=json.loads(contenido), auth=CREDENCIALES
+    )
+    assert respuesta.status_code == 400
+    assert "hora" in respuesta.json()["error"].lower()
+
+
+def test_60_los_ejemplos_no_permiten_salir_de_su_carpeta(cliente):
+    """El nombre del ejemplo se limita a datos/ejemplos/."""
+    respuesta = cliente.get(
+        "/api/admin/ejemplos/inexistente.json", auth=CREDENCIALES
+    )
+    assert respuesta.status_code == 400
+    assert cliente.get("/api/admin/ejemplos").status_code == 401

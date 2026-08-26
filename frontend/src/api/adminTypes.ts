@@ -43,10 +43,49 @@ export interface AdminGuardarFuenteResponse {
   casos: string[];
 }
 
+export interface AdminConteo {
+  S?: string;
+  E?: string;
+  L?: string;
+  D?: string;
+  R?: string;
+}
+
 export interface AdminCrearCasoResponse {
   ok: boolean;
   archivo: string;
   ruta: string;
+  caso: string;
+  conteo: AdminConteo;
+  cumple_minimos: boolean;
+  casos: string[];
+}
+
+export interface AdminGenerarCasoResponse {
+  ok: boolean;
+  archivo: string;
+  caso: string;
+  conteo: AdminConteo;
+  cumple_minimos: boolean;
+  casos: string[];
+}
+
+export interface AdminEjemplo {
+  archivo: string;
+  id: string;
+  titulo: string;
+  descripcion: string;
+}
+
+export interface AdminEjemplosResponse {
+  ok: boolean;
+  ejemplos: AdminEjemplo[];
+}
+
+export interface AdminEjemploResponse {
+  ok: boolean;
+  archivo: string;
+  contenido: string;
 }
 
 export interface AdminRecargarResponse {

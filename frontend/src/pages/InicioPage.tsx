@@ -99,7 +99,7 @@ export default function InicioPage() {
                   , no con corazonadas.
                 </h1>
                 <p className="mt-4 text-base leading-relaxed text-text-muted">
-                  Asumes el rol de detective: interrogas sospechosos,
+                  Asumes el Rol de Detective: interrogas sospechosos,
                   inspeccionas lugares y examinas evidencias. Cada dato alimenta
                   una base de conocimiento en Prolog que deduce al responsable y
                   explica por qué.

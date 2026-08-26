@@ -41,7 +41,7 @@ export default function AdminLoginPage() {
                 Administración
               </h1>
               <p className="mt-1 text-sm text-text-muted">
-                Ingresa tus credenciales para gestionar los casos
+                Ingresa tus Credenciales para Gestionar los casos
               </p>
             </div>
           </div>

@@ -105,33 +105,72 @@ def listar_archivos() -> list[str]:
 
 
 def listar_ejemplos() -> list[dict[str, Any]]:
-    """Casos de ejemplo en JSON incluidos en el repositorio.
+    """Casos de ejemplo incluidos en el repositorio, en JSON y en CSV.
 
     El panel los ofrece para probar el generador sin tener que escribir un caso
-    entero a mano. Ver datos/ejemplos/README.md para el esquema.
+    entero a mano; cada uno lleva su `formato` para que la interfaz muestre los
+    que corresponden a la pestana abierta. Ver datos/ejemplos/README.md.
     """
     ejemplos = []
-    for ruta in sorted(DIR_EJEMPLOS.glob("*.json")):
-        try:
-            datos = json.loads(ruta.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            continue
-        ejemplos.append(
-            {
-                "archivo": ruta.name,
-                "id": datos.get("id", ""),
-                "titulo": datos.get("titulo", ruta.stem),
-                "descripcion": datos.get("descripcion", ""),
-            }
-        )
+    for ruta in sorted(DIR_EJEMPLOS.glob("*.json")) + sorted(DIR_EJEMPLOS.glob("*.csv")):
+        ficha = _ficha_ejemplo(ruta)
+        if ficha:
+            ejemplos.append(ficha)
     return ejemplos
 
 
+def _ficha_ejemplo(ruta: Path) -> dict[str, Any] | None:
+    """Identificador, titulo y descripcion de un ejemplo, sea JSON o CSV.
+
+    Devuelve None si el archivo no se puede interpretar: un ejemplo ilegible no
+    debe tumbar el listado entero del panel.
+    """
+    try:
+        contenido = ruta.read_text(encoding="utf-8")
+    except OSError:
+        return None
+
+    if ruta.suffix == ".json":
+        try:
+            datos = json.loads(contenido)
+        except json.JSONDecodeError:
+            return None
+        identificador = datos.get("id", "")
+        titulo = datos.get("titulo", ruta.stem)
+        descripcion = datos.get("descripcion", "")
+    else:
+        # En CSV los metadatos viven en la fila `caso`. Se busca con un lector
+        # suelto y no con _filas_csv: ese valida el archivo entero y fallaria en
+        # un ejemplo con errores a proposito, que tambien queremos listar.
+        import csv as _csv
+        import io as _io
+
+        identificador = titulo = descripcion = ""
+        for celdas in _csv.reader(_io.StringIO(contenido)):
+            if len(celdas) >= 4 and celdas[0].strip().lower() == "caso":
+                identificador = celdas[1].strip()
+                titulo = celdas[2].strip()
+                descripcion = celdas[3].strip()
+                break
+        if not titulo:
+            titulo = ruta.stem
+
+    return {
+        "archivo": ruta.name,
+        "formato": "json" if ruta.suffix == ".json" else "csv",
+        "id": identificador,
+        "titulo": titulo,
+        "descripcion": descripcion,
+    }
+
+
 def leer_ejemplo(archivo: str) -> str:
-    """Devuelve el JSON de un ejemplo, tal cual esta en disco."""
+    """Devuelve el contenido de un ejemplo, tal cual esta en disco."""
     ruta = (DIR_EJEMPLOS / Path(archivo).name).resolve()
     if ruta.parent != DIR_EJEMPLOS.resolve() or not ruta.exists():
         raise AccionInvalida(f"No existe el ejemplo {archivo}.")
+    if ruta.suffix not in {".json", ".csv"}:
+        raise AccionInvalida(f"El ejemplo {archivo} no es un JSON ni un CSV.")
     return ruta.read_text(encoding="utf-8")
 
 
@@ -269,6 +308,28 @@ def crear_caso(caso: str, titulo: str, descripcion: str, dificultad: str) -> dic
     return {"archivo": ruta.name, "ruta": str(ruta), **_resumen_de(caso)}
 
 
+def _casos_declarados() -> list[str]:
+    """Identificadores de los casos que el cargador sigue declarando.
+
+    Se leen del propio logic_detective.pl y no del motor: es la fuente de
+    verdad de que casos deben quedar cargados tras una edicion o un borrado.
+    """
+    carga = ARCHIVO_CARGA.read_text(encoding="utf-8")
+    archivos = re.findall(r"ensure_loaded\('casos/([^']+)'\)", carga)
+
+    identificadores: list[str] = []
+    for nombre in archivos:
+        ruta = DIR_CASOS / f"{nombre}.pl"
+        if not ruta.exists():
+            continue
+        encontrado = re.search(
+            r"^caso\(\s*([a-z][a-zA-Z0-9_]*)\s*,", ruta.read_text(encoding="utf-8"), re.M
+        )
+        if encontrado:
+            identificadores.append(encontrado.group(1))
+    return identificadores
+
+
 def eliminar_caso(archivo: str) -> None:
     """Elimina un archivo de caso, dejando respaldo."""
     ruta = (DIR_CASOS / Path(archivo).name).resolve()
@@ -288,7 +349,9 @@ def eliminar_caso(archivo: str) -> None:
         ) + "\n"
         ARCHIVO_CARGA.write_text(carga, encoding="utf-8")
 
-    reiniciar_engine()
+    # Los casos vigentes son los que siguen declarados en el cargador; el
+    # eliminado debe desaparecer tambien del interprete embebido.
+    reiniciar_engine(casos_vigentes=_casos_declarados())
 
 
 def recargar() -> dict[str, Any]:
@@ -608,3 +671,272 @@ def generar_caso_desde_json(datos: dict[str, Any]) -> dict[str, Any]:
     reiniciar_engine()
 
     return {"archivo": ruta.name, **_resumen_de(caso)}
+
+
+# =============================================================================
+# OPCIONAL 9 (segunda mitad) — Importador CSV
+# -----------------------------------------------------------------------------
+# El enunciado pide un motor para generar casos "a partir de archivos JSON o
+# CSV". El generador JSON ya existe y esta validado; este importador NO duplica
+# esa logica: traduce el CSV a la misma estructura de diccionario y delega en
+# generar_caso_desde_json/1.
+#
+# Asi hay un unico camino de generacion, una unica validacion sintactica y una
+# unica comprobacion de minimos. El CSV es solo otro formato de entrada.
+#
+# FORMATO
+# -------
+# Un caso completo necesita muchas tablas distintas (personas, lugares,
+# evidencias...). En vez de exigir un archivo por tabla, se usa un unico CSV
+# donde la PRIMERA COLUMNA (`tipo`) discrimina la clase de fila y el resto de
+# columnas se interpretan segun ese tipo:
+#
+#   tipo,c1,c2,c3,c4,c5
+#   caso,mi_caso,El titulo,La descripcion,facil
+#   incidente,Robo del sello,despacho,2100
+#   ventana,2030,2130
+#   victima,victor
+#   solucion,ana
+#   persona,ana,Ana Ruiz,sospechoso
+#   lugar,despacho,Despacho,Oficina del notario
+#   conexion,entrada,pasillo
+#   acceso,ana,despacho,llave
+#   estuvo,ana,despacho,2100
+#   evento,ev1,2100,despacho,Se apaga la luz
+#   evidencia,e01,huella,Huella en el marco,despacho,2100
+#   vincula,e01,ana
+#   situa,e01,ana,despacho
+#   declaracion,d1,ana,No estuve alli
+#   afirma,d1,no_estuvo,ana,despacho,2100
+#   coartada,ana,pasillo,2100,toni
+#   motivo,ana,financiero,Deudas vencidas
+#   requiere,llave
+#   medio,ana,llave
+#   relacion,ana,victor,deuda
+#   regla,r01,Nombre de la regla,Que deduce
+#
+# La cabecera es opcional: si la primera fila empieza por "tipo" se descarta.
+# Las filas vacias y las que empiezan por "#" se ignoran.
+# =============================================================================
+
+# Numero de columnas (sin contar `tipo`) que exige cada clase de fila.
+_COLUMNAS_CSV = {
+    "caso": 4, "incidente": 3, "ventana": 2, "victima": 1, "solucion": 1,
+    "persona": 3, "lugar": 3, "conexion": 2, "acceso": 3, "estuvo": 3,
+    "evento": 4, "evidencia": 5, "vincula": 2, "situa": 3,
+    "declaracion": 3, "afirma": 2, "coartada": 4, "motivo": 3,
+    "requiere": 1, "medio": 2, "relacion": 3, "regla": 3,
+}
+
+# Columnas que necesita cada tipo de afirmacion, despues de `afirma,<decl>,<tipo>`.
+_CAMPOS_AFIRMACION = {
+    "estuvo":     ["persona", "lugar", "hora"],
+    "no_estuvo":  ["persona", "lugar", "hora"],
+    "vio":        ["observador", "observado", "lugar", "hora"],
+    "poseia":     ["persona", "objeto"],
+    "desconoce":  ["persona", "objeto"],
+}
+
+
+def _hora_csv(valor: str, campo: str) -> int:
+    """Convierte una hora del CSV a entero HHMM.
+
+    Todo lo que sale de un CSV es texto, pero el generador exige enteros para
+    las horas. La conversion se hace aqui, en la capa especifica del formato,
+    para no relajar la validacion del generador JSON.
+    """
+    try:
+        return int(str(valor).strip())
+    except (TypeError, ValueError):
+        raise AccionInvalida(
+            f"El campo {campo} debe ser una hora en formato HHMM (por ejemplo 2100), "
+            f"y llego {valor!r}."
+        ) from None
+
+
+def _filas_csv(contenido: str) -> list[tuple[int, str, list[str]]]:
+    """Parsea el CSV y devuelve (numero_de_linea, tipo, columnas_restantes).
+
+    Se apoya en el modulo `csv` de la libreria estandar en vez de partir por
+    comas a mano: las descripciones llevan comas y van entrecomilladas.
+    """
+    import csv
+    import io
+
+    filas: list[tuple[int, str, list[str]]] = []
+    lector = csv.reader(io.StringIO(contenido))
+
+    for numero, columnas in enumerate(lector, start=1):
+        if not columnas:
+            continue
+        celdas = [c.strip() for c in columnas]
+        if not any(celdas) or celdas[0].startswith("#"):
+            continue
+        tipo = celdas[0].lower()
+        # Cabecera opcional. Se compara contra la primera fila UTIL, no contra
+        # la linea 1: un archivo de ejemplo suele abrir con comentarios y la
+        # cabecera queda mas abajo.
+        if not filas and tipo == "tipo":
+            continue
+        if tipo not in _COLUMNAS_CSV:
+            raise AccionInvalida(
+                f"Linea {numero}: tipo de fila desconocido {celdas[0]!r}. "
+                f"Validos: {', '.join(sorted(_COLUMNAS_CSV))}."
+            )
+        resto = celdas[1:]
+        minimo = _COLUMNAS_CSV[tipo]
+        if len([c for c in resto[:minimo] if c]) < minimo:
+            raise AccionInvalida(
+                f"Linea {numero}: la fila '{tipo}' necesita {minimo} columna(s) "
+                f"despues del tipo y llegaron {len([c for c in resto if c])}."
+            )
+        filas.append((numero, tipo, resto))
+
+    if not filas:
+        raise AccionInvalida("El CSV no contiene ninguna fila util.")
+    return filas
+
+
+def csv_a_estructura(contenido: str) -> dict[str, Any]:
+    """Traduce el CSV de un caso a la estructura que espera el generador JSON.
+
+    Se expone por separado de la generacion para poder probar la traduccion sin
+    escribir archivos ni tocar el motor.
+    """
+    datos: dict[str, Any] = {
+        "personas": [], "lugares": [], "conexiones": [], "accesos": [],
+        "ubicaciones": [], "eventos": [], "evidencias": [], "declaraciones": [],
+        "coartadas": [], "motivos": [], "medios_requeridos": [], "medios": [],
+        "relaciones": [], "reglas": [],
+    }
+    # Indices para poder colgar vincula/situa de su evidencia y las
+    # afirmaciones de su declaracion, vengan en el orden que vengan.
+    evidencias: dict[str, dict[str, Any]] = {}
+    declaraciones: dict[str, dict[str, Any]] = {}
+
+    for numero, tipo, c in _filas_csv(contenido):
+        if tipo == "caso":
+            datos.update({
+                "id": c[0], "titulo": c[1], "descripcion": c[2], "dificultad": c[3],
+            })
+        elif tipo == "incidente":
+            datos["incidente"] = {
+                "descripcion": c[0], "lugar": c[1],
+                "hora": _hora_csv(c[2], "incidente.hora"),
+            }
+        elif tipo == "ventana":
+            datos["ventana"] = [
+                _hora_csv(c[0], "ventana[0]"), _hora_csv(c[1], "ventana[1]"),
+            ]
+        elif tipo == "victima":
+            datos["victima"] = c[0]
+        elif tipo == "solucion":
+            datos["solucion"] = c[0]
+        elif tipo == "persona":
+            datos["personas"].append({"id": c[0], "nombre": c[1], "rol": c[2]})
+        elif tipo == "lugar":
+            datos["lugares"].append({"id": c[0], "nombre": c[1], "descripcion": c[2]})
+        elif tipo == "conexion":
+            datos["conexiones"].append([c[0], c[1]])
+        elif tipo == "acceso":
+            datos["accesos"].append({"persona": c[0], "lugar": c[1], "tipo": c[2]})
+        elif tipo == "estuvo":
+            datos["ubicaciones"].append(
+                {"persona": c[0], "lugar": c[1], "hora": _hora_csv(c[2], "estuvo.hora")}
+            )
+        elif tipo == "evento":
+            datos["eventos"].append(
+                {
+                    "id": c[0], "hora": _hora_csv(c[1], "evento.hora"),
+                    "lugar": c[2], "descripcion": c[3],
+                }
+            )
+        elif tipo == "evidencia":
+            ficha = {
+                "id": c[0], "tipo": c[1], "descripcion": c[2],
+                "lugar": c[3], "hora": _hora_csv(c[4], "evidencia.hora"),
+                "vincula": [],
+            }
+            evidencias[c[0]] = ficha
+            datos["evidencias"].append(ficha)
+        elif tipo == "vincula":
+            if c[0] not in evidencias:
+                raise AccionInvalida(
+                    f"Linea {numero}: 'vincula' referencia la evidencia {c[0]!r}, "
+                    "que no se declaro antes con una fila 'evidencia'."
+                )
+            evidencias[c[0]]["vincula"].append(c[1])
+        elif tipo == "situa":
+            if c[0] not in evidencias:
+                raise AccionInvalida(
+                    f"Linea {numero}: 'situa' referencia la evidencia {c[0]!r}, "
+                    "que no se declaro antes con una fila 'evidencia'."
+                )
+            evidencias[c[0]]["situa"] = {"persona": c[1], "lugar": c[2]}
+        elif tipo == "declaracion":
+            ficha = {"id": c[0], "autor": c[1], "texto": c[2], "afirmaciones": []}
+            declaraciones[c[0]] = ficha
+            datos["declaraciones"].append(ficha)
+        elif tipo == "afirma":
+            if c[0] not in declaraciones:
+                raise AccionInvalida(
+                    f"Linea {numero}: 'afirma' referencia la declaracion {c[0]!r}, "
+                    "que no se declaro antes con una fila 'declaracion'."
+                )
+            clase = c[1]
+            campos = _CAMPOS_AFIRMACION.get(clase)
+            if campos is None:
+                raise AccionInvalida(
+                    f"Linea {numero}: afirmacion no soportada {clase!r}. "
+                    f"Validas: {', '.join(_CAMPOS_AFIRMACION)}."
+                )
+            valores = [v for v in c[2:] if v]
+            if len(valores) < len(campos):
+                raise AccionInvalida(
+                    f"Linea {numero}: la afirmacion '{clase}' necesita "
+                    f"{len(campos)} valor(es) ({', '.join(campos)})."
+                )
+            afirmacion: dict[str, Any] = {"tipo": clase}
+            for campo, valor in zip(campos, valores):
+                afirmacion[campo] = (
+                    _hora_csv(valor, f"afirma.{campo}") if campo == "hora" else valor
+                )
+            declaraciones[c[0]]["afirmaciones"].append(afirmacion)
+        elif tipo == "coartada":
+            datos["coartadas"].append(
+                {
+                    "persona": c[0], "lugar": c[1],
+                    "hora": _hora_csv(c[2], "coartada.hora"), "testigo": c[3],
+                }
+            )
+        elif tipo == "motivo":
+            datos["motivos"].append(
+                {"persona": c[0], "tipo": c[1], "descripcion": c[2]}
+            )
+        elif tipo == "requiere":
+            datos["medios_requeridos"].append(c[0])
+        elif tipo == "medio":
+            datos["medios"].append({"persona": c[0], "medio": c[1]})
+        elif tipo == "relacion":
+            datos["relaciones"].append({"a": c[0], "b": c[1], "tipo": c[2]})
+        elif tipo == "regla":
+            datos["reglas"].append(
+                {"id": c[0], "nombre": c[1], "descripcion": c[2]}
+            )
+
+    if "id" not in datos:
+        raise AccionInvalida(
+            "Falta la fila 'caso': caso,<id>,<titulo>,<descripcion>,<dificultad>."
+        )
+    return datos
+
+
+def generar_caso_desde_csv(contenido: str) -> dict[str, Any]:
+    """Genera un caso a partir de un CSV. Opcional 9 del enunciado.
+
+    Traduce y delega en generar_caso_desde_json/1, que valida la sintaxis en un
+    interprete aparte, comprueba los minimos y registra el caso en el cargador.
+    """
+    if not isinstance(contenido, str) or not contenido.strip():
+        raise AccionInvalida("El CSV llego vacio.")
+    return generar_caso_desde_json(csv_a_estructura(contenido))

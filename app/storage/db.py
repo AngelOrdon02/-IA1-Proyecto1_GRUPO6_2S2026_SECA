@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS sesiones (
     pistas       INTEGER NOT NULL DEFAULT 0,
     cerrada      TEXT,
     puntuacion   INTEGER NOT NULL DEFAULT 100,
-    tiempo_inicio TEXT
+    tiempo_inicio TEXT,
+    campania     TEXT
 );
 
 CREATE TABLE IF NOT EXISTS descubrimientos (
@@ -50,8 +51,16 @@ CREATE TABLE IF NOT EXISTS bitacora (
     FOREIGN KEY (sesion) REFERENCES sesiones(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_bitacora_sesion ON bitacora(sesion);
-CREATE INDEX IF NOT EXISTS idx_desc_sesion     ON descubrimientos(sesion);
+-- Opcional 10: modo multicaso. Una campania agrupa varias sesiones, una por
+-- caso, y se cierra cuando todas se han jugado.
+CREATE TABLE IF NOT EXISTS campanias (
+    id        TEXT PRIMARY KEY,
+    iniciada  TEXT NOT NULL,
+    cerrada   TEXT,
+    estado    TEXT NOT NULL DEFAULT 'en_curso',
+    orden     TEXT NOT NULL DEFAULT ''
+);
+
 """
 
 # Migracion: agrega las columnas nuevas a bases existentes sin romper nada.
@@ -59,6 +68,18 @@ CREATE INDEX IF NOT EXISTS idx_desc_sesion     ON descubrimientos(sesion);
 MIGRACIONES = """
 ALTER TABLE sesiones ADD COLUMN puntuacion    INTEGER NOT NULL DEFAULT 100;
 ALTER TABLE sesiones ADD COLUMN tiempo_inicio TEXT;
+ALTER TABLE sesiones ADD COLUMN campania      TEXT;
+"""
+
+# Los indices van APARTE del esquema y se crean DESPUES de las migraciones.
+# Motivo: en una base que ya existe, el CREATE TABLE IF NOT EXISTS de sesiones
+# no hace nada, asi que las columnas nuevas solo llegan por ALTER TABLE. Un
+# indice sobre sesiones(campania) dentro del esquema se ejecutaria antes de esa
+# migracion y reventaria el arranque con "no such column: campania".
+INDICES = """
+CREATE INDEX IF NOT EXISTS idx_bitacora_sesion   ON bitacora(sesion);
+CREATE INDEX IF NOT EXISTS idx_desc_sesion       ON descubrimientos(sesion);
+CREATE INDEX IF NOT EXISTS idx_sesiones_campania ON sesiones(campania);
 """
 
 
@@ -98,20 +119,26 @@ def inicializar() -> None:
             except sqlite3.OperationalError:
                 # "duplicate column name" — la columna ya existia, no pasa nada.
                 pass
+        # Solo ahora existen con seguridad las columnas que los indices usan.
+        con.executescript(INDICES)
 
 
 # ---------------------------------------------------------------------------
 # Sesiones
 # ---------------------------------------------------------------------------
 
-def crear_sesion(caso: str) -> str:
-    """Registra una nueva investigacion y devuelve su identificador."""
+def crear_sesion(caso: str, campania: str | None = None) -> str:
+    """Registra una nueva investigacion y devuelve su identificador.
+
+    `campania` la usa el modo multicaso (opcional 10) para agrupar las sesiones
+    de una misma partida; en el modo normal queda a NULL.
+    """
     sesion_id = uuid.uuid4().hex[:12]
     with conexion() as con:
         con.execute(
-            "INSERT INTO sesiones (id, caso, iniciada, puntuacion, tiempo_inicio) "
-            "VALUES (?, ?, ?, ?, ?)",
-            (sesion_id, caso, ahora(), 100, ahora()),
+            "INSERT INTO sesiones (id, caso, iniciada, puntuacion, tiempo_inicio, campania) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (sesion_id, caso, ahora(), 100, ahora(), campania),
         )
     return sesion_id
 
@@ -344,9 +371,164 @@ def leer_bitacora(sesion_id: str) -> list[dict[str, Any]]:
     return [dict(f) for f in filas]
 
 
+# ---------------------------------------------------------------------------
+# Campanias — modo multicaso (opcional 10)
+# ---------------------------------------------------------------------------
+
+def crear_campania(orden: list[str]) -> str:
+    """Abre una campania multicaso y devuelve su identificador.
+
+    `orden` es la secuencia de casos a jugar, decidida en Prolog.
+    """
+    campania_id = uuid.uuid4().hex[:12]
+    with conexion() as con:
+        con.execute(
+            "INSERT INTO campanias (id, iniciada, orden) VALUES (?, ?, ?)",
+            (campania_id, ahora(), ",".join(orden)),
+        )
+    return campania_id
+
+
+def obtener_campania(campania_id: str) -> dict[str, Any] | None:
+    with conexion() as con:
+        fila = con.execute(
+            "SELECT * FROM campanias WHERE id = ?", (campania_id,)
+        ).fetchone()
+    if fila is None:
+        return None
+    datos = dict(fila)
+    datos["orden"] = [c for c in (datos.get("orden") or "").split(",") if c]
+    return datos
+
+
+def sesiones_de_campania(campania_id: str) -> list[dict[str, Any]]:
+    """Sesiones de una campania, en el orden en que se jugaron."""
+    with conexion() as con:
+        filas = con.execute(
+            "SELECT * FROM sesiones WHERE campania = ? ORDER BY iniciada",
+            (campania_id,),
+        ).fetchall()
+    return [dict(f) for f in filas]
+
+
+def cerrar_campania(campania_id: str) -> None:
+    with conexion() as con:
+        con.execute(
+            "UPDATE campanias SET estado = 'completada', cerrada = ? WHERE id = ?",
+            (ahora(), campania_id),
+        )
+
+
+def listar_campanias(limite: int = 50) -> list[dict[str, Any]]:
+    """Campanias con su avance, para el listado de estadisticas."""
+    with conexion() as con:
+        filas = con.execute(
+            """
+            SELECT c.id, c.iniciada, c.cerrada, c.estado, c.orden,
+                   COUNT(s.id) AS sesiones,
+                   SUM(CASE WHEN s.veredicto = 'correcto' THEN 1 ELSE 0 END) AS aciertos,
+                   SUM(CASE WHEN s.estado != 'en_curso' THEN 1 ELSE 0 END) AS cerradas,
+                   AVG(CASE WHEN s.estado != 'en_curso' THEN s.puntuacion END) AS puntuacion_media
+            FROM campanias c
+            LEFT JOIN sesiones s ON s.campania = c.id
+            GROUP BY c.id
+            ORDER BY c.iniciada DESC
+            LIMIT ?
+            """,
+            (limite,),
+        ).fetchall()
+
+    campanias = []
+    for fila in filas:
+        datos = dict(fila)
+        datos["orden"] = [c for c in (datos.get("orden") or "").split(",") if c]
+        datos["aciertos"] = int(datos["aciertos"] or 0)
+        datos["cerradas"] = int(datos["cerradas"] or 0)
+        datos["puntuacion_media"] = (
+            round(float(datos["puntuacion_media"]), 1)
+            if datos["puntuacion_media"] is not None else None
+        )
+        campanias.append(datos)
+    return campanias
+
+
+# ---------------------------------------------------------------------------
+# Estadisticas de resolucion (opcional 10)
+# ---------------------------------------------------------------------------
+
+def _segundos_entre(inicio: str | None, fin: str | None) -> float | None:
+    """Duracion en segundos entre dos marcas ISO 8601, o None si falta alguna."""
+    if not inicio or not fin:
+        return None
+    try:
+        return (datetime.fromisoformat(fin) - datetime.fromisoformat(inicio)).total_seconds()
+    except ValueError:
+        return None
+
+
+def estadisticas_por_caso() -> list[dict[str, Any]]:
+    """Metricas de resolucion agregadas por caso.
+
+    El tiempo medio se calcula en Python y no en SQL porque las marcas se
+    guardan como texto ISO 8601: restarlas en SQLite exigiria depender del
+    formato exacto, mientras que datetime.fromisoformat lo interpreta bien.
+    """
+    with conexion() as con:
+        filas = con.execute(
+            "SELECT caso, estado, veredicto, pistas, puntuacion, "
+            "       COALESCE(tiempo_inicio, iniciada) AS comienzo, cerrada "
+            "FROM sesiones"
+        ).fetchall()
+
+    por_caso: dict[str, dict[str, Any]] = {}
+    for fila in filas:
+        caso = fila["caso"]
+        acumulado = por_caso.setdefault(caso, {
+            "caso": caso, "partidas": 0, "en_curso": 0, "cerradas": 0,
+            "aciertos": 0, "fallos": 0,
+            "_pistas": [], "_puntuaciones": [], "_duraciones": [],
+        })
+        acumulado["partidas"] += 1
+
+        if fila["estado"] == "en_curso":
+            acumulado["en_curso"] += 1
+            continue
+
+        acumulado["cerradas"] += 1
+        if fila["veredicto"] == "correcto":
+            acumulado["aciertos"] += 1
+        else:
+            acumulado["fallos"] += 1
+
+        acumulado["_pistas"].append(int(fila["pistas"] or 0))
+        acumulado["_puntuaciones"].append(int(fila["puntuacion"] or 0))
+        duracion = _segundos_entre(fila["comienzo"], fila["cerrada"])
+        if duracion is not None and duracion >= 0:
+            acumulado["_duraciones"].append(duracion)
+
+    resumen = []
+    for datos in por_caso.values():
+        cerradas = datos["cerradas"]
+        promedio = lambda xs: round(sum(xs) / len(xs), 1) if xs else None
+        resumen.append({
+            "caso": datos["caso"],
+            "partidas": datos["partidas"],
+            "en_curso": datos["en_curso"],
+            "cerradas": cerradas,
+            "aciertos": datos["aciertos"],
+            "fallos": datos["fallos"],
+            "tasa_exito": round(datos["aciertos"] / cerradas * 100, 1) if cerradas else 0.0,
+            "pistas_medias": promedio(datos["_pistas"]),
+            "puntuacion_media": promedio(datos["_puntuaciones"]),
+            "tiempo_medio_seg": promedio(datos["_duraciones"]),
+        })
+    return sorted(resumen, key=lambda d: d["caso"])
+
+
 def borrar_todo() -> None:
     """Vacia la base. Solo lo usan las pruebas y el modulo administrativo."""
     with conexion() as con:
         con.executescript(
-            "DELETE FROM bitacora; DELETE FROM descubrimientos; DELETE FROM sesiones;"
+            "DELETE FROM bitacora; DELETE FROM descubrimientos; "
+            "DELETE FROM sesiones; DELETE FROM campanias;"
         )

@@ -130,6 +130,31 @@ export const adminApi = {
       body: JSON.stringify(datos),
     }),
 
+  // Opcional 9: genera un caso a partir de un CSV. El servidor lo traduce a la
+  // misma estructura del generador JSON, asi que comparten validacion.
+  generarCasoCsv: (contenido: string) =>
+    request<AdminGenerarCasoResponse>("/api/admin/casos/generar-csv", {
+      method: "POST",
+      body: JSON.stringify({ contenido }),
+    }),
+
+  // Traduce el CSV y devuelve el conteo sin escribir nada, para poder
+  // comprobar el archivo antes de generar el caso.
+  previsualizarCsv: (contenido: string) =>
+    request<{
+      ok: boolean;
+      conteo: {
+        sospechosos: number;
+        evidencias: number;
+        lugares: number;
+        declaraciones: number;
+        reglas: number;
+      };
+    }>("/api/admin/casos/previsualizar-csv", {
+      method: "POST",
+      body: JSON.stringify({ contenido }),
+    }),
+
   // Casos de ejemplo en datos/ejemplos/, para probar el generador sin escribir
   // un caso entero a mano.
   ejemplos: () => request<AdminEjemplosResponse>("/api/admin/ejemplos"),

@@ -27,6 +27,10 @@ import type {
   Sesion,
   GrafoResponse,
   HistorialResponse,
+  MulticasoInicio,
+  MulticasoEstado,
+  MulticasoPaso,
+  EstadisticasResponse,
 } from "./types.ts";
 
 class ApiError extends Error {
@@ -181,6 +185,21 @@ export const api = {
     const qs = search.toString();
     return request<HistorialResponse>(`/api/historial${qs ? `?${qs}` : ""}`);
   },
+  // Opcional 10: modo multicaso. El orden de los casos lo decide Prolog.
+  iniciarMulticaso: () =>
+    request<MulticasoInicio>("/api/multicaso", { method: "POST" }),
+
+  estadoMulticaso: (campania: string) =>
+    request<MulticasoEstado>(`/api/multicaso/${campania}`),
+
+  siguienteMulticaso: (campania: string) =>
+    request<MulticasoPaso>(`/api/multicaso/${campania}/siguiente`, {
+      method: "POST",
+    }),
+
+  // Opcional 10: estadisticas de resolucion por caso, globales y de campanias.
+  estadisticas: () => request<EstadisticasResponse>("/api/estadisticas"),
+
   // Opcional 2: aplica un delta de puntuacion a la sesion activa.
   // delta negativo = penalizacion, positivo = bonus.
   registrarPuntos: (sesion: string, delta: number) =>

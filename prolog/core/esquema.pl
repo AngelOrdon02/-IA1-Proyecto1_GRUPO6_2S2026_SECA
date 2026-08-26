@@ -130,3 +130,69 @@
 :- discontiguous motivo/4.
 :- discontiguous medio/3.
 :- discontiguous relacion/4.
+
+% ===========================================================================
+% PURGA DE UN CASO
+% ---------------------------------------------------------------------------
+% Necesario porque SWI-Prolog embebido (PySwip) vive en el proceso: reiniciar
+% el objeto de Python NO descarta las clausulas ya consultadas. Al eliminar un
+% caso desde el modulo administrativo su archivo desaparece del disco, pero sus
+% hechos seguirian en memoria y el caso continuaria apareciendo en el listado.
+%
+% Con el backend de subproceso el problema no existe (cada consulta arranca un
+% interprete limpio), pero la aplicacion debe comportarse igual con los dos.
+% ===========================================================================
+
+% predicado_de_caso(?Nombre, ?Aridad)
+% Predicados del esquema cuyo PRIMER argumento es el identificador del caso.
+predicado_de_caso(caso, 4).
+predicado_de_caso(incidente, 4).
+predicado_de_caso(ventana_incidente, 3).
+predicado_de_caso(victima, 2).
+predicado_de_caso(requiere_medio, 2).
+predicado_de_caso(solucion, 2).
+predicado_de_caso(persona, 4).
+predicado_de_caso(relacion, 4).
+predicado_de_caso(lugar, 4).
+predicado_de_caso(conexion, 3).
+predicado_de_caso(acceso, 4).
+predicado_de_caso(estuvo_en, 4).
+predicado_de_caso(evento, 5).
+predicado_de_caso(evidencia, 6).
+predicado_de_caso(vincula, 3).
+predicado_de_caso(evidencia_lugar_persona, 4).
+predicado_de_caso(declaracion, 4).
+predicado_de_caso(afirma, 3).
+predicado_de_caso(coartada, 5).
+predicado_de_caso(motivo, 4).
+predicado_de_caso(medio, 3).
+predicado_de_caso(regla_caso, 4).
+
+% ---------------------------------------------------------------------------
+% purgar_caso(+Caso)
+% Retracta todos los hechos de un caso. Tiene exito siempre, incluso si el caso
+% no estaba cargado: es una operacion idempotente de limpieza.
+%
+% functor/3 construye una cabecera con la aridad correcta y arg/3 fija el
+% primer argumento al caso; retractall/1 borra todo lo que unifique con ella.
+% ---------------------------------------------------------------------------
+purgar_caso(Caso) :-
+    forall(
+        predicado_de_caso(Nombre, Aridad),
+        ( functor(Cabecera, Nombre, Aridad),
+          arg(1, Cabecera, Caso),
+          retractall(Cabecera) )
+    ).
+
+% ---------------------------------------------------------------------------
+% purgar_casos_ausentes(+CasosVigentes)
+% Retracta todo caso cargado en memoria que ya no figure en la lista dada.
+% Es lo que se llama tras recargar la base de conocimiento: los casos cuyo
+% archivo se elimino desaparecen tambien del motor.
+% ---------------------------------------------------------------------------
+purgar_casos_ausentes(Vigentes) :-
+    findall(C, caso(C, _, _, _), Cargados),
+    forall(
+        ( member(C, Cargados), \+ memberchk(C, Vigentes) ),
+        purgar_caso(C)
+    ).

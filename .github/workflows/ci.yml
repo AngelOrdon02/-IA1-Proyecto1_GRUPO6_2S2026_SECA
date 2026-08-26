@@ -1,0 +1,218 @@
+# =============================================================================
+# Logic Detective — Integracion Continua
+# -----------------------------------------------------------------------------
+# Cuatro trabajos encadenados, del mas barato al mas caro, para que un fallo de
+# sintaxis en la base de conocimiento no gaste minutos construyendo la imagen:
+#
+#   1. motor-prolog — compila la KB y valida los minimos del enunciado.
+#   2. frontend     — comprueba tipos y compila la SPA de React.
+#   3. pruebas      — suite completa contra los dos backends del puente Prolog.
+#   4. contenedor   — construye la imagen, la arranca y la ejercita de verdad.
+# =============================================================================
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop, "feature/**", "feat/**"]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+# Si se empuja dos veces seguidas a la misma rama, cancela la ejecucion vieja.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  motor-prolog:
+    name: Base de conocimiento (SWI-Prolog)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar SWI-Prolog
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends swi-prolog-nox
+          swipl --version
+
+      - name: Compilar la base de conocimiento
+        # Falla si algun archivo de caso tiene errores de sintaxis.
+        run: swipl -q -g "consult('prolog/logic_detective.pl')" -g halt -t "halt(1)"
+
+      - name: Validar los minimos de cada caso
+        # 4 sospechosos, 10 evidencias, 5 lugares, 5 declaraciones, 10 reglas.
+        run: |
+          swipl -q -g "consult('prolog/logic_detective.pl')" -g "
+            forall(caso(C,_,_,_), (
+              conteo_caso(C, Conteo),
+              ( cumple_minimos(C)
+              -> format('OK    ~w  ~w~n', [C, Conteo])
+              ;  format('FALLA ~w  ~w~n', [C, Conteo]), halt(1) )
+            ))" -g halt -t "halt(1)"
+
+      - name: Verificar que el motor deduce el culpable correcto
+        # La deduccion debe coincidir con solucion/2 declarada en cada caso.
+        run: |
+          swipl -q -g "consult('prolog/logic_detective.pl')" -g "
+            forall(solucion(C, Esperado), (
+              ( responsable(C, Deducido)
+              -> true
+              ;  format('FALLA ~w: sin responsable deducible~n',[C]), halt(1) ),
+              ( Deducido == Esperado
+              -> format('OK    ~w -> ~w~n', [C, Deducido])
+              ;  format('FALLA ~w: deduce ~w, esperado ~w~n', [C, Deducido, Esperado]),
+                 halt(1) )
+            ))" -g halt -t "halt(1)"
+
+      - name: Comprobar los constructos obligatorios del enunciado
+        # El enunciado exige uso comprobable de listas, recursividad, negacion
+        # y cortes. Si alguien los borra al refactorizar, el pipeline avisa.
+        run: |
+          set -e
+          cortes=$(grep -rc '!\.' prolog/core/*.pl | awk -F: '{s+=$2} END {print s}')
+          negacion=$(grep -rc '\\+' prolog/core/*.pl | awk -F: '{s+=$2} END {print s}')
+          listas=$(grep -rc 'findall' prolog/core/*.pl | awk -F: '{s+=$2} END {print s}')
+          echo "cortes=$cortes negacion=$negacion findall=$listas"
+          test "$cortes"   -ge 5 || { echo "Faltan cortes";     exit 1; }
+          test "$negacion" -ge 5 || { echo "Falta negacion";    exit 1; }
+          test "$listas"   -ge 5 || { echo "Faltan listas";     exit 1; }
+
+  # ---------------------------------------------------------------------------
+  frontend:
+    name: Frontend (React + Vite)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Instalar dependencias
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Comprobar tipos
+        working-directory: frontend
+        run: pnpm lint
+
+      - name: Compilar la SPA
+        working-directory: frontend
+        run: pnpm build
+
+  # ---------------------------------------------------------------------------
+  pruebas:
+    name: Pruebas (backend ${{ matrix.backend }})
+    runs-on: ubuntu-latest
+    needs: motor-prolog
+    strategy:
+      fail-fast: false
+      matrix:
+        # Se ejercitan los dos backends del puente: el fallback de subproceso
+        # debe dar los mismos resultados que PySwip, no solo no romperse.
+        backend: [pyswip, subprocess]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar SWI-Prolog
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends swi-prolog-nox
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Ejecutar la suite
+        env:
+          LD_PROLOG_BACKEND: ${{ matrix.backend }}
+          SWI_HOME_DIR: /usr/lib/swi-prolog
+          LD_LIBRARY_PATH: /usr/lib/swi-prolog/lib/x86_64-linux
+        run: pytest tests/ -v --tb=short
+
+  # ---------------------------------------------------------------------------
+  contenedor:
+    name: Imagen Docker
+    runs-on: ubuntu-latest
+    needs: [pruebas, frontend]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Construir la imagen
+        run: docker build -t logic-detective:ci .
+
+      - name: Arrancar el contenedor
+        run: |
+          docker run -d --name ld-ci -p 8000:8000 \
+            -e LD_ADMIN_USER=ci -e LD_ADMIN_PASS=clave-solo-de-ci \
+            logic-detective:ci
+
+      - name: Esperar a que responda
+        run: |
+          for intento in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8000/salud > /dev/null; then
+              echo "Aplicacion arriba tras $intento intento(s)"
+              curl -s http://127.0.0.1:8000/salud
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "La aplicacion no respondio a tiempo"
+          docker logs ld-ci
+          exit 1
+
+      - name: Verificar que el backend embebido es PySwip
+        # Si libswipl.so no carga, el sistema degrada a subproceso y sigue
+        # funcionando. Eso es correcto en produccion, pero en la imagen oficial
+        # queremos enterarnos: la rubrica pide integracion via PySwip.
+        run: |
+          salud=$(curl -s http://127.0.0.1:8000/salud)
+          echo "$salud"
+          echo "$salud" | grep -q "backend=pyswip" || {
+            echo "La imagen degrado al backend de subproceso"; exit 1; }
+
+      - name: Comprobar que la API sirve los tres casos
+        run: curl -sf http://127.0.0.1:8000/api/casos | tee /dev/stderr | grep -q caso3
+
+      - name: Comprobar que la SPA se sirve
+        run: curl -sf http://127.0.0.1:8000/ | grep -qi "<!doctype html" 
+
+      - name: Comprobar que /api/admin exige autenticacion
+        run: |
+          codigo=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/api/admin/casos)
+          test "$codigo" = "401" || { echo "Se esperaba 401 y llego $codigo"; exit 1; }
+
+      - name: Resolver un caso de extremo a extremo
+        # La prueba mas valiosa del pipeline: ejercita el motor de inferencia a
+        # traves de la API real, dentro del contenedor que se va a desplegar.
+        run: |
+          set -e
+          sesion=$(curl -sf -X POST http://127.0.0.1:8000/api/sesiones \
+            -H 'Content-Type: application/json' -d '{"caso":"caso1"}' \
+            | python3 -c "import sys,json; print(json.load(sys.stdin)['sesion'])")
+          echo "Sesion: $sesion"
+          veredicto=$(curl -sf -X POST "http://127.0.0.1:8000/api/sesiones/$sesion/acusar" \
+            -H 'Content-Type: application/json' -d '{"acusado":"peruggia"}' \
+            | python3 -c "import sys,json; print(json.load(sys.stdin)['resultado']['veredicto'])")
+          echo "Veredicto: $veredicto"
+          test "$veredicto" = "correcto"
+
+      - name: Ejecutar la suite dentro del contenedor
+        run: docker exec ld-ci python -m pytest tests/ -q
+
+      - name: Registro del contenedor si algo fallo
+        if: failure()
+        run: docker logs ld-ci

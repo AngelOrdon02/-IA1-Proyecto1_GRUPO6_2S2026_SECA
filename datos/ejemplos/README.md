@@ -1,23 +1,34 @@
-# Casos de ejemplo en JSON
+# Casos de ejemplo en JSON y CSV
 
-Archivos listos para pegar en **Admin → Casos cargados → Generar desde JSON**
-(o para enviar a `POST /api/admin/casos/generar`). El servidor los traduce a
-hechos Prolog con el esquema de `prolog/core/esquema.pl`, valida la sintaxis en
-un intérprete aparte, registra el caso en `prolog/logic_detective.pl` y recarga
-el motor.
+Archivos listos para cargar desde **Admin → Casos cargados → Generar desde
+archivo**, con el botón «Cargar un ejemplo» de la pestaña correspondiente. El
+servidor los traduce a hechos Prolog con el esquema de `prolog/core/esquema.pl`,
+valida la sintaxis en un intérprete aparte, registra el caso en
+`prolog/logic_detective.pl` y recarga el motor.
 
-| Archivo | Para qué sirve |
-|---|---|
-| `caso_biblioteca.json` | Caso completo y narrativo. Cumple los mínimos (4 sospechosos, 12 evidencias, 5 lugares, 6 declaraciones, 12 reglas) y el motor concluye `responsable(caso_biblioteca, duarte)` con puntajes 136 / 72 / 42 / 12. |
-| `caso_taller.json` | Caso mínimo, el más corto que cumple el enunciado. Sirve como prueba de humo rápida; concluye `responsable(caso_taller, ayala)`. |
-| `caso_invalido.json` | Contiene tres errores a propósito (hora `2575`, identificador `Ayala` en mayúscula, tipo de afirmación `sospecho`). Sirve para comprobar que el panel muestra el mensaje de error del servidor. |
+Cada caso está en los **dos formatos**, y son equivalentes: el `.pl` que genera
+el CSV es idéntico byte a byte al que genera el JSON, porque el importador CSV
+se traduce a la misma estructura y delega en el generador JSON.
+
+| Caso | Archivos | Para qué sirve |
+|---|---|---|
+| El manuscrito de la biblioteca | `caso_biblioteca.json` · `caso_biblioteca.csv` | Caso completo y narrativo. Cumple los mínimos (4 sospechosos, 12 evidencias, 5 lugares, 6 declaraciones, 12 reglas) y el motor concluye `responsable(caso_biblioteca, duarte)` con puntajes 136 / 72 / 42 / 12. |
+| El taller de la esquina | `caso_taller.json` · `caso_taller.csv` | Caso mínimo, el más corto que cumple el enunciado. Prueba de humo rápida; concluye `responsable(caso_taller, ayala)`. |
+| Caso con errores a propósito | `caso_invalido.json` · `caso_invalido.csv` | Errores sembrados para comprobar que el panel muestra el mensaje del servidor. El JSON falla por la hora `2575`; el CSV, por un tipo de fila inexistente, e informa del número de línea. |
 
 Desde la terminal:
 
 ```bash
+# JSON
 curl -u admin:$LD_ADMIN_PASS -H 'Content-Type: application/json' \
      -d @datos/ejemplos/caso_biblioteca.json \
      http://127.0.0.1:8000/api/admin/casos/generar
+
+# CSV (el cuerpo es {"contenido": "<el csv>"}, así que se envuelve antes)
+python3 -c 'import json,sys; print(json.dumps({"contenido": open(sys.argv[1]).read()}))' \
+     datos/ejemplos/caso_biblioteca.csv \
+  | curl -u admin:$LD_ADMIN_PASS -H 'Content-Type: application/json' -d @- \
+     http://127.0.0.1:8000/api/admin/casos/generar-csv
 ```
 
 Para dejar la base como estaba:
@@ -27,6 +38,8 @@ curl -u admin:$LD_ADMIN_PASS -H 'Content-Type: application/json' \
      -d '{"archivo":"caso_biblioteca.pl"}' \
      http://127.0.0.1:8000/api/admin/casos/eliminar
 ```
+
+El formato CSV está documentado aparte, en `docs/generador_casos.md`.
 
 ## Esquema del JSON
 

@@ -88,3 +88,70 @@ conteo_caso(Caso, conteo(Sospechosos, Evidencias, Lugares, Declaraciones, Reglas
 cumple_minimos(Caso) :-
     conteo_caso(Caso, conteo(S, E, L, D, R)),
     S >= 4, E >= 10, L >= 5, D >= 5, R >= 10.
+
+% ===========================================================================
+% MODO MULTICASO  (opcional 10 del enunciado)
+% ---------------------------------------------------------------------------
+% Una campania multicaso recorre todos los casos en orden creciente de
+% dificultad. El orden es una decision del dominio, no de presentacion, asi
+% que se resuelve aqui y no en Python.
+% ===========================================================================
+
+% peso_dificultad(?Dificultad, ?Peso)
+% Orden canonico de las dificultades del enunciado.
+peso_dificultad(facil,   1).
+peso_dificultad(medio,   2).
+peso_dificultad(dificil, 3).
+peso_dificultad(_,       9).   % cualquier dificultad no prevista va al final
+
+% ---------------------------------------------------------------------------
+% dificultad_de(?Caso, -Peso)
+% once/1 selecciona el primer peso aplicable: sin el, un caso 'facil'
+% unificaria tambien con la clausula comodin y pesaria 1 y 9 a la vez.
+%
+% El corte va DENTRO de once/1 y no al final de la clausula: un corte final
+% seria un CORTE ROJO, porque con Caso sin ligar se compromete con el primer
+% caso generado y deja fuera a todos los demas. Es exactamente el fallo
+% descrito en docs/mapa_constructos.md.
+% ---------------------------------------------------------------------------
+dificultad_de(Caso, Peso) :-
+    caso(Caso, _, _, Dificultad),
+    once(peso_dificultad(Dificultad, Peso)).
+
+% ---------------------------------------------------------------------------
+% casos_por_dificultad(-Lista)
+% Todos los casos cargados, del mas facil al mas dificil. A igual dificultad
+% se ordenan por identificador, para que la campania sea reproducible.
+% ---------------------------------------------------------------------------
+casos_por_dificultad(Lista) :-
+    findall(Peso-Caso, dificultad_de(Caso, Peso), Pares),
+    msort(Pares, Ordenados),
+    valores_de_pares(Ordenados, Lista).
+
+% Recursividad sobre la lista de pares Peso-Caso para quedarse con los casos.
+valores_de_pares([], []).
+valores_de_pares([_-Caso|Resto], [Caso|Casos]) :-
+    valores_de_pares(Resto, Casos).
+
+% ---------------------------------------------------------------------------
+% siguiente_caso(+Jugados, -Siguiente)
+% Primer caso de la secuencia que todavia no se ha jugado. Falla cuando la
+% campania esta completa, que es como el servicio detecta el final.
+% ---------------------------------------------------------------------------
+siguiente_caso(Jugados, Siguiente) :-
+    casos_por_dificultad(Todos),
+    primer_no_jugado(Todos, Jugados, Siguiente).
+
+primer_no_jugado([Caso|_], Jugados, Caso) :-
+    no_pertenece(Caso, Jugados),
+    !.
+primer_no_jugado([_|Resto], Jugados, Siguiente) :-
+    primer_no_jugado(Resto, Jugados, Siguiente).
+
+% ---------------------------------------------------------------------------
+% total_casos(-N)
+% Cuantos casos tiene una campania completa.
+% ---------------------------------------------------------------------------
+total_casos(N) :-
+    casos_por_dificultad(Lista),
+    longitud(Lista, N).

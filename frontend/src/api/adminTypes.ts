@@ -72,6 +72,7 @@ export interface AdminGenerarCasoResponse {
 
 export interface AdminEjemplo {
   archivo: string;
+  formato: "json" | "csv";
   id: string;
   titulo: string;
   descripcion: string;

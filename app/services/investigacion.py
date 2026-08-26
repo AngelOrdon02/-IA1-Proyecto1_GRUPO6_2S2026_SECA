@@ -98,18 +98,21 @@ def ficha_caso(caso: str) -> dict[str, Any]:
 # Inicio de una investigacion
 # ---------------------------------------------------------------------------
 
-def iniciar(caso: str) -> str:
+def iniciar(caso: str, campania: str | None = None) -> str:
     """Abre una sesion de investigacion y devuelve su identificador.
 
     Al iniciar, el detective conoce a las personas y los lugares, pero ninguna
     evidencia ni declaracion: esas debe descubrirlas actuando.
+
+    `campania` solo lo usa el modo multicaso (opcional 10) para agrupar las
+    sesiones de una misma partida; en el modo normal queda a None.
     """
     caso = _atomo(caso)
     engine = obtener_engine()
     if not engine.es_cierto(f"caso({caso}, _, _, _)"):
         raise AccionInvalida(f"El caso {caso} no existe.")
 
-    sesion = db.crear_sesion(caso)
+    sesion = db.crear_sesion(caso, campania=campania)
     for fila in engine.consultar(f"persona({caso}, Id, _, _)"):
         db.registrar_descubrimiento(sesion, "persona", fila["Id"])
     for fila in engine.consultar(f"lugar({caso}, Id, _, _)"):
@@ -984,3 +987,200 @@ def generar_informe_html(sesion: str) -> str:
 </body>
 </html>
 """
+
+
+# =============================================================================
+# OPCIONAL 10 — Modo multicaso con estadisticas de resolucion
+# -----------------------------------------------------------------------------
+# Una campania recorre todos los casos en orden creciente de dificultad. El
+# orden y la eleccion del siguiente caso los decide Prolog
+# (`casos_por_dificultad/1`, `siguiente_caso/2`); aqui solo se persiste el
+# avance y se agregan las metricas.
+# =============================================================================
+
+def _campania_activa(campania_id: str) -> dict[str, Any]:
+    datos = db.obtener_campania(campania_id)
+    if datos is None:
+        raise AccionInvalida("La campania multicaso no existe.")
+    return datos
+
+
+def _formatear_duracion(segundos: float | None) -> str | None:
+    """Convierte segundos a 'MM:SS' o 'HH:MM:SS'. None si no hay dato."""
+    if segundos is None:
+        return None
+    total = int(segundos)
+    horas, resto = divmod(total, 3600)
+    minutos, segs = divmod(resto, 60)
+    if horas:
+        return f"{horas}:{minutos:02d}:{segs:02d}"
+    return f"{minutos:02d}:{segs:02d}"
+
+
+def iniciar_multicaso() -> dict[str, Any]:
+    """Abre una campania y arranca la investigacion del primer caso."""
+    engine = obtener_engine()
+    fila = engine.uno("casos_por_dificultad(Orden)")
+    if fila is None:
+        raise AccionInvalida("No hay casos cargados en el motor.")
+
+    # Prolog devuelve la lista como texto: '[caso1,caso2,caso3]'.
+    orden = [c for c in fila["Orden"].strip("[]").split(",") if c]
+    if not orden:
+        raise AccionInvalida("No hay casos cargados en el motor.")
+
+    campania = db.crear_campania(orden)
+    primera = iniciar(orden[0], campania=campania)
+
+    return {
+        "campania": campania,
+        "orden": orden,
+        "total": len(orden),
+        "completados": 0,
+        "sesion": primera,
+        "caso": orden[0],
+    }
+
+
+def estado_multicaso(campania_id: str) -> dict[str, Any]:
+    """Avance de la campania y metricas acumuladas."""
+    campania = _campania_activa(campania_id)
+    sesiones = db.sesiones_de_campania(campania_id)
+    engine = obtener_engine()
+
+    titulos = {
+        c["Id"]: c["Titulo"] for c in engine.consultar("caso(Id, Titulo, _, _)")
+    }
+
+    detalle = []
+    aciertos = 0
+    puntuacion_total = 0
+    cerradas = 0
+    for sesion in sesiones:
+        duracion = db._segundos_entre(
+            sesion.get("tiempo_inicio") or sesion.get("iniciada"), sesion.get("cerrada")
+        )
+        if sesion["estado"] != "en_curso":
+            cerradas += 1
+            puntuacion_total += int(sesion.get("puntuacion") or 0)
+            if sesion.get("veredicto") == "correcto":
+                aciertos += 1
+        detalle.append({
+            "sesion": sesion["id"],
+            "caso": sesion["caso"],
+            "titulo": titulos.get(sesion["caso"], sesion["caso"]),
+            "estado": sesion["estado"],
+            "veredicto": sesion.get("veredicto"),
+            "acusado": sesion.get("acusado"),
+            "puntuacion": sesion.get("puntuacion"),
+            "pistas": sesion.get("pistas"),
+            "duracion_seg": duracion,
+            "duracion": _formatear_duracion(duracion),
+        })
+
+    jugados = [s["caso"] for s in sesiones]
+    en_curso = next((s for s in sesiones if s["estado"] == "en_curso"), None)
+
+    # Es Prolog quien dice cual toca y si la campania termino.
+    lista_jugados = _lista_prolog(jugados)
+    siguiente = engine.uno(f"siguiente_caso({lista_jugados}, Siguiente)")
+    completada = siguiente is None and en_curso is None
+
+    if completada and campania["estado"] == "en_curso":
+        db.cerrar_campania(campania_id)
+        campania = _campania_activa(campania_id)
+
+    return {
+        "campania": campania_id,
+        "estado": campania["estado"],
+        "orden": campania["orden"],
+        "total": len(campania["orden"]),
+        "completados": cerradas,
+        "aciertos": aciertos,
+        "tasa_exito": round(aciertos / cerradas * 100, 1) if cerradas else 0.0,
+        "puntuacion_total": puntuacion_total,
+        "puntuacion_media": round(puntuacion_total / cerradas, 1) if cerradas else None,
+        "sesion_en_curso": en_curso["id"] if en_curso else None,
+        "siguiente_caso": siguiente["Siguiente"] if siguiente else None,
+        "completada": completada,
+        "sesiones": detalle,
+    }
+
+
+def siguiente_multicaso(campania_id: str) -> dict[str, Any]:
+    """Arranca la investigacion del siguiente caso de la campania."""
+    estado = estado_multicaso(campania_id)
+
+    if estado["sesion_en_curso"]:
+        raise AccionInvalida(
+            "Todavia hay una investigacion abierta en esta campania. "
+            "Emite la acusacion antes de pasar al siguiente caso."
+        )
+    if estado["siguiente_caso"] is None:
+        raise AccionInvalida("La campania ya recorrio todos los casos.")
+
+    sesion = iniciar(estado["siguiente_caso"], campania=campania_id)
+    return {
+        "campania": campania_id,
+        "caso": estado["siguiente_caso"],
+        "sesion": sesion,
+        "completados": estado["completados"],
+        "total": estado["total"],
+    }
+
+
+def estadisticas_resolucion() -> dict[str, Any]:
+    """Estadisticas de resolucion por caso y globales. Opcional 10.
+
+    Combina lo que ya calculaba el historial (opcional 8) con las metricas
+    especificas del modo multicaso: tiempo medio, puntuacion media y avance de
+    cada campania.
+    """
+    engine = obtener_engine()
+    titulos = {
+        c["Id"]: {"titulo": c["Titulo"], "dificultad": c["Dificultad"]}
+        for c in engine.consultar("caso(Id, Titulo, _, Dificultad)")
+    }
+
+    por_caso = db.estadisticas_por_caso()
+    for fila in por_caso:
+        info = titulos.get(fila["caso"], {})
+        fila["titulo"] = info.get("titulo", fila["caso"])
+        fila["dificultad"] = info.get("dificultad", "desconocida")
+        fila["tiempo_medio"] = _formatear_duracion(fila["tiempo_medio_seg"])
+
+    # Casos cargados que todavia nadie ha jugado: deben aparecer en cero, no
+    # desaparecer de la tabla.
+    jugados = {f["caso"] for f in por_caso}
+    for identificador, info in titulos.items():
+        if identificador not in jugados:
+            por_caso.append({
+                "caso": identificador, "titulo": info["titulo"],
+                "dificultad": info["dificultad"],
+                "partidas": 0, "en_curso": 0, "cerradas": 0,
+                "aciertos": 0, "fallos": 0, "tasa_exito": 0.0,
+                "pistas_medias": None, "puntuacion_media": None,
+                "tiempo_medio_seg": None, "tiempo_medio": None,
+            })
+    por_caso.sort(key=lambda f: f["caso"])
+
+    campanias = db.listar_campanias()
+    completadas = [c for c in campanias if c["estado"] == "completada"]
+
+    globales = db.estadisticas_globales()
+    duraciones = [f["tiempo_medio_seg"] for f in por_caso if f["tiempo_medio_seg"]]
+    globales["tiempo_medio_seg"] = (
+        round(sum(duraciones) / len(duraciones), 1) if duraciones else None
+    )
+    globales["tiempo_medio"] = _formatear_duracion(globales["tiempo_medio_seg"])
+
+    return {
+        "globales": globales,
+        "por_caso": por_caso,
+        "multicaso": {
+            "campanias": len(campanias),
+            "completadas": len(completadas),
+            "en_curso": len(campanias) - len(completadas),
+            "detalle": campanias,
+        },
+    }

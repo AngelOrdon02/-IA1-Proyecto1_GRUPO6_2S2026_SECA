@@ -217,20 +217,62 @@ def test_44_las_pistas_se_entregan_en_orden_y_se_agotan(cliente):
 
 
 # ---------------------------------------------------------------------------
-# Interfaz web
+# Interfaz: endpoints que alimentan cada seccion del panel
 # ---------------------------------------------------------------------------
+#
+# La interfaz migro de plantillas Jinja a una SPA de React. Comprobar el HTML
+# de "/investigacion/{sesion}?seccion=X" dejo de tener sentido: el comodin de
+# la SPA devuelve 200 para cualquier ruta, asi que la prueba pasaria aunque el
+# backend estuviera roto.
+#
+# Se verifica en su lugar el endpoint de API que alimenta cada seccion, que es
+# donde de verdad vive la respuesta del motor de inferencia.
+
+# (seccion del panel, endpoint que la alimenta)
+SECCIONES_DEL_PANEL = [
+    ("resumen",          "/api/casos/caso1"),
+    ("sospechosos",      "/api/sesiones/{s}/sospechosos"),
+    ("lugares",          "/api/sesiones/{s}/lugares"),
+    ("evidencias",       "/api/sesiones/{s}/evidencias"),
+    ("relaciones",       "/api/sesiones/{s}/relaciones"),
+    ("motivos",          "/api/sesiones/{s}/motivos"),
+    ("oportunidades",    "/api/sesiones/{s}/oportunidades"),
+    ("coartadas",        "/api/sesiones/{s}/coartadas"),
+    ("tiempo",           "/api/sesiones/{s}/linea-temporal"),
+    ("contradicciones",  "/api/sesiones/{s}/contradicciones"),
+    ("sospecha",         "/api/sesiones/{s}/sospecha"),
+    ("explicacion",      "/api/sesiones/{s}/explicacion"),
+    ("bitacora",         "/api/sesiones/{s}/bitacora"),
+    ("grafo",            "/api/sesiones/{s}/grafo"),
+    ("informe",          "/api/sesiones/{s}/informe"),
+]
+
 
 @pytest.mark.parametrize(
-    "seccion",
-    ["resumen", "sospechosos", "interrogatorios", "lugares", "evidencias",
-     "relaciones", "analisis", "coartadas", "tiempo", "contradicciones",
-     "sospecha", "explicacion", "bitacora", "acusacion"],
+    "seccion,plantilla_ruta",
+    SECCIONES_DEL_PANEL,
+    ids=[nombre for nombre, _ in SECCIONES_DEL_PANEL],
 )
-def test_45_todas_las_secciones_del_panel_responden(cliente, seccion):
-    """Las catorce vistas que cubren las dieciseis acciones del enunciado."""
+def test_45_cada_seccion_del_panel_tiene_su_endpoint(cliente, seccion, plantilla_ruta):
+    """Las secciones que cubren las 16 acciones del enunciado responden."""
     sesion = _abrir(cliente, "caso1")
-    respuesta = cliente.get(f"/investigacion/{sesion}?seccion={seccion}")
-    assert respuesta.status_code == 200
+    respuesta = cliente.get(plantilla_ruta.format(s=sesion))
+
+    assert respuesta.status_code == 200, f"La seccion '{seccion}' no responde"
+    cuerpo = respuesta.json()
+    assert cuerpo.get("ok") is True, f"La seccion '{seccion}' devolvio ok=false"
+
+
+def test_45b_la_spa_se_sirve_en_las_rutas_del_navegador(cliente):
+    """El comodin de la SPA atiende las rutas de React, pero no las de la API.
+
+    Es la contraparte del cambio anterior: se comprueba que el fallback existe
+    y, sobre todo, que NO se traga las rutas de API inexistentes, porque eso
+    convertiria un 404 legitimo en un 200 con HTML.
+    """
+    inexistente = cliente.get("/api/ruta/que/no/existe")
+    assert inexistente.status_code == 404
+    assert "text/html" not in inexistente.headers.get("content-type", "")
 
 
 def test_46_una_sesion_inexistente_da_error_controlado(cliente):
@@ -327,3 +369,57 @@ def test_52_el_historial_calcula_estadisticas_y_permite_filtrar(cliente):
     # Filtro por veredicto
     filtrado_veredicto = cliente.get("/api/historial?veredicto=correcto").json()
     assert all(s["veredicto"] == "correcto" for s in filtrado_veredicto["sesiones"])
+
+
+def test_61_la_base_de_datos_migra_desde_un_esquema_antiguo(tmp_path, monkeypatch):
+    """Arrancar sobre una base ya existente no debe romperse.
+
+    Regresion: la columna sesiones.campania (modo multicaso) llega por ALTER
+    TABLE, pero el indice que la usa vivia dentro del script de esquema, que se
+    ejecuta ANTES de las migraciones. En una base creada por una version previa
+    el CREATE TABLE IF NOT EXISTS no hace nada, la columna aun no existe y el
+    arranque moria con "no such column: campania". La suite no lo veia porque
+    cada ejecucion parte de una base vacia.
+    """
+    import sqlite3
+
+    from app import config
+    from app.storage import db
+
+    ruta = tmp_path / "antigua.db"
+    monkeypatch.setattr(config, "RUTA_BD", ruta)
+
+    # Base con el esquema anterior: sesiones sin puntuacion, tiempo_inicio ni
+    # campania, y sin la tabla de campanias.
+    con = sqlite3.connect(ruta)
+    con.executescript(
+        """
+        CREATE TABLE sesiones (
+            id        TEXT PRIMARY KEY,
+            caso      TEXT NOT NULL,
+            iniciada  TEXT NOT NULL,
+            estado    TEXT NOT NULL DEFAULT 'en_curso',
+            acusado   TEXT,
+            veredicto TEXT,
+            pistas    INTEGER NOT NULL DEFAULT 0,
+            cerrada   TEXT
+        );
+        INSERT INTO sesiones (id, caso, iniciada)
+        VALUES ('vieja', 'caso1', '2026-01-01T00:00:00+00:00');
+        """
+    )
+    con.commit()
+    con.close()
+
+    db.inicializar()
+
+    con = sqlite3.connect(ruta)
+    columnas = {fila[1] for fila in con.execute("PRAGMA table_info(sesiones)")}
+    indices = {fila[1] for fila in con.execute("PRAGMA index_list(sesiones)")}
+    con.close()
+
+    assert {"puntuacion", "tiempo_inicio", "campania"} <= columnas
+    assert "idx_sesiones_campania" in indices
+
+    # Y la sesion que ya existia sigue ahi: migrar no puede perder datos.
+    assert any(s["id"] == "vieja" for s in db.listar_sesiones(limite=10))

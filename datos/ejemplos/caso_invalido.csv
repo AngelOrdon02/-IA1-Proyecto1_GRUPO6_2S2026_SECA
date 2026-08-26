@@ -1,0 +1,17 @@
+# Ejemplo con errores A PROPOSITO: sirve para comprobar que el panel muestra
+# el mensaje de error del servidor, con el numero de linea cuando aplica.
+# Errores sembrados:
+#   1. la fila 'sospechoso' no es un tipo valido
+#   2. 'vincula' referencia una evidencia que no se declaro antes
+#   3. la hora 2575 no existe
+#   4. 'Ayala' empieza por mayuscula: no es un atomo Prolog
+tipo,c1,c2,c3,c4,c5
+caso,caso_roto,Caso con errores a proposito,Cada error esta comentado arriba.,facil
+incidente,La caja fuerte del taller aparece vacia,oficina,2575
+ventana,1830,1930
+victima,molina
+persona,molina,Don Molina,victima
+persona,Ayala,Ayala,sospechoso
+sospechoso,bran,Bran,sospechoso
+lugar,oficina,Oficina,Area de oficina
+vincula,t01,ayala

@@ -1,0 +1,119 @@
+tipo,c1,c2,c3,c4,c5
+caso,caso_biblioteca,El manuscrito de la biblioteca,El manuscrito de Ubico desaparece de la vitrina de la Sala de Reservados durante el cierre nocturno. Cuatro personas tenian razones para quererlo y solo una pudo llegar hasta la vitrina.,medio
+incidente,La vitrina de la Sala de Reservados aparece forzada y el manuscrito ha desaparecido,sala_reservados,2115
+ventana,2045,2145
+victima,navas
+solucion,duarte
+persona,navas,Profesor Ernesto Navas,victima
+persona,duarte,Ricardo Duarte,sospechoso
+persona,salazar,Irene Salazar,sospechoso
+persona,mendez,Hugo Mendez,sospechoso
+persona,orozco,Lucia Orozco,sospechoso
+persona,conserje,Benito Ruano,testigo
+persona,vigilante,Marta Cifuentes,testigo
+lugar,sala_reservados,Sala de Reservados,Sala cerrada con la vitrina del manuscrito.
+lugar,pasillo_norte,Pasillo norte,Unico corredor que comunica con Reservados.
+lugar,deposito,Deposito,Almacen de cajas y material de archivo.
+lugar,recepcion,Recepcion,"Entrada principal, con el libro de visitas."
+lugar,patio_interior,Patio interior,"Patio de servicio, salida de emergencia."
+conexion,recepcion,pasillo_norte
+conexion,pasillo_norte,sala_reservados
+conexion,pasillo_norte,deposito
+conexion,deposito,patio_interior
+conexion,recepcion,patio_interior
+acceso,duarte,recepcion,gafete
+acceso,duarte,pasillo_norte,llave_maestra
+acceso,duarte,sala_reservados,llave_maestra
+acceso,duarte,deposito,llave_maestra
+acceso,salazar,recepcion,gafete
+acceso,salazar,pasillo_norte,tarjeta_docente
+acceso,salazar,sala_reservados,tarjeta_docente
+acceso,mendez,recepcion,gafete
+acceso,mendez,patio_interior,gafete
+acceso,mendez,deposito,gafete
+acceso,orozco,recepcion,gafete
+estuvo,duarte,recepcion,2050
+estuvo,duarte,pasillo_norte,2105
+estuvo,duarte,sala_reservados,2110
+estuvo,duarte,deposito,2125
+estuvo,salazar,recepcion,2045
+estuvo,salazar,pasillo_norte,2100
+estuvo,mendez,patio_interior,2055
+estuvo,mendez,deposito,2130
+estuvo,orozco,recepcion,2050
+estuvo,orozco,recepcion,2120
+evento,ev1,2045,recepcion,El conserje anuncia el cierre en quince minutos.
+evento,ev2,2100,pasillo_norte,Salazar y el conserje conversan junto a la escalera.
+evento,ev3,2108,pasillo_norte,La camara capta una figura con guantes hacia Reservados.
+evento,ev4,2112,sala_reservados,El lector electronico registra una llave maestra.
+evento,ev5,2115,sala_reservados,Se fuerza la vitrina del manuscrito.
+evento,ev6,2140,recepcion,El vigilante descubre la vitrina abierta.
+evidencia,e01,huella_dactilar,Huella parcial en el cristal forzado de la vitrina.,sala_reservados,2115
+vincula,e01,duarte
+situa,e01,duarte,sala_reservados
+evidencia,e02,fibra_textil,Fibras de lana gris identicas al saco de Duarte junto a la vitrina.,sala_reservados,2115
+vincula,e02,duarte
+evidencia,e03,registro_acceso,El lector de Reservados registra la llave maestra numero 5 a las 21:12.,sala_reservados,2112
+vincula,e03,duarte
+evidencia,e04,grabacion,Video del pasillo norte con una figura enguantada rumbo a Reservados.,pasillo_norte,2108
+evidencia,e05,colilla,Colilla con marca de labial en el descanso del pasillo norte.,pasillo_norte,2100
+vincula,e05,salazar
+situa,e05,salazar,pasillo_norte
+evidencia,e06,guante,Un guante de archivo suelto sobre una caja del deposito.,deposito,2130
+vincula,e06,mendez
+situa,e06,mendez,deposito
+evidencia,e07,nota_manuscrita,"Nota con el numero de catalogo del manuscrito, sin firma.",deposito,2050
+evidencia,e08,registro_visitas,El libro de visitas registra la entrada y salida de Orozco.,recepcion,2050
+vincula,e08,orozco
+situa,e08,orozco,recepcion
+evidencia,e09,huella_calzado,Pisadas mojadas hacia la salida de emergencia del patio.,patio_interior,2135
+evidencia,e10,cristal_roto,"Astillas de cristal en el suelo, delante de la vitrina.",sala_reservados,2115
+evidencia,e11,correo_impreso,Correo impreso de un coleccionista ofreciendo pagar por el manuscrito a Duarte.,deposito,2000
+vincula,e11,duarte
+evidencia,e12,llave_duplicada,"Copia sin registrar de la llave de la vitrina, escondida tras una caja.",deposito,2140
+vincula,e12,duarte
+declaracion,dec1,duarte,"A esa hora estaba en el deposito revisando cajas. No entre a Reservados ni cruce el pasillo, y no se de que huella me hablan."
+afirma,dec1,no_estuvo,duarte,sala_reservados,2115
+afirma,dec1,no_estuvo,duarte,pasillo_norte,2105
+afirma,dec1,desconoce,duarte,huella_dactilar
+declaracion,dec2,salazar,"Estuve en el pasillo norte hasta pasadas las nueve, conversando con el conserje."
+afirma,dec2,estuvo,salazar,pasillo_norte,2100
+declaracion,dec3,mendez,Sali al patio a fumar y despues baje al deposito a dejar unas cajas.
+afirma,dec3,estuvo,mendez,patio_interior,2055
+afirma,dec3,estuvo,mendez,deposito,2130
+declaracion,dec4,orozco,Vi a Ricardo Duarte cruzar el pasillo norte hacia Reservados poco despues de las nueve.
+afirma,dec4,vio,orozco,duarte,pasillo_norte,2105
+declaracion,dec5,conserje,Cerre la recepcion a las nueve y cuarenta. Irene Salazar estuvo conmigo en el pasillo todo ese rato.
+afirma,dec5,estuvo,salazar,pasillo_norte,2100
+declaracion,dec6,vigilante,El registro del lector marca una llave maestra abriendo Reservados justo antes de que sonara la alarma.
+afirma,dec6,estuvo,duarte,sala_reservados,2115
+coartada,duarte,deposito,2110,orozco
+coartada,salazar,pasillo_norte,2100,conserje
+coartada,mendez,patio_interior,2055,vigilante
+coartada,orozco,recepcion,2050,conserje
+motivo,duarte,financiero,Debe una suma considerable y un coleccionista le ofrecio pagar por el manuscrito.
+motivo,salazar,academico,Compite con Navas por la catedra y el manuscrito sostiene la tesis de el.
+motivo,mendez,laboral,Navas firmo su carta de despido el mes pasado.
+requiere,llave_vitrina
+requiere,guantes_de_archivo
+medio,duarte,llave_vitrina
+medio,duarte,guantes_de_archivo
+medio,salazar,guantes_de_archivo
+medio,mendez,guantes_de_archivo
+relacion,duarte,navas,deuda
+relacion,salazar,navas,rivalidad
+relacion,mendez,navas,despido
+relacion,orozco,navas,colega
+relacion,duarte,orozco,amistad
+regla,r01,Acceso por llave maestra,Solo la llave maestra abre Reservados sin dejar el pasillo registrado.
+regla,r02,Corredor unico,"Reservados solo se alcanza por el pasillo norte, asi que sin acceso al pasillo no hay acceso al manuscrito."
+regla,r03,Coartada de un sospechoso,Una coartada respaldada por otro sospechoso no sostiene nada.
+regla,r04,Huella sobre testimonio,La huella en la vitrina pesa mas que la negacion de haber estado ahi.
+regla,r05,Desconocimiento fingido,Decir que se desconoce una evidencia que lo vincula es informacion falsa.
+regla,r06,Doble medio obligatorio,El robo exige la llave de la vitrina y los guantes de archivo a la vez.
+regla,r07,Ventana de cierre,Solo cuenta como oportunidad estar en Reservados o en el pasillo entre 20:45 y 21:45.
+regla,r08,Distancia del deposito,El deposito no es adyacente a Reservados: estar ahi no da oportunidad.
+regla,r09,Testigo no sospechoso,Solo el conserje y el vigilante pueden respaldar una coartada valida.
+regla,r10,Motivo economico documentado,El correo del coleccionista convierte la deuda en un motivo economico concreto.
+regla,r11,Avistamiento cruzado,Un avistamiento en el pasillo desmiente a quien niega haber pasado por ahi.
+regla,r12,Llave duplicada,"Una copia sin registrar de la llave de la vitrina acredita el medio, aunque aparezca despues."

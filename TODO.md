@@ -1,6 +1,8 @@
 # Logic Detective — Lo que falta por hacer
 
 > Estado verificado el **16/08/2026** sobre la rama `feature/202300512`.
+> **Revisado y actualizado el 26/08/2026** sobre `develop`: ver los cambios
+> marcados como *(26/08)*.
 > Entrega: **28/08/2026** · Calificación: **29/08/2026**.
 >
 > Todo lo marcado [OK] fue comprobado ejecutando el código, no leyendo la
@@ -15,13 +17,17 @@
 | Rubro de la rúbrica | Pts | Estado real |
 |---|---|---|
 | 2.1 Motor de Inferencia en Prolog | 20 | [OK] **Completo** — 3 casos válidos, 16 predicados, constructos comprobados |
-| 2.2 Desarrollo e Integración en Python | 20 | [En progreso] **Funciona** — API + admin OK; **4 pruebas rotas** tras migrar a React |
+| 2.2 Desarrollo e Integración en Python | 20 | [OK] **Completo (26/08)** — API + admin OK; **120 pruebas pasando** con ambos backends |
 | 2.3 Contenedorización y Despliegue | 20 | [En progreso] **Imagen verificada 16/08**, falta desplegar en la nube |
-| 1.2 Gestión de Repositorio y CI/CD | 30 | [Critico] **En riesgo** — pipeline **pospuesto por decisión del equipo**, `main` vacío, commits de una sola persona |
+| 1.2 Gestión de Repositorio y CI/CD | 30 | [En progreso] **Pipeline creado (26/08)** — falta *mergear a `main`* y que corra en verde en GitHub |
 | 1.1 Documentación | 10 | [En progreso] **A medias** — 5 docs escritos, faltan capturas y diagrama de flujo |
 
 **Los 30 puntos de repositorio/CI son hoy el mayor riesgo del proyecto**, no el
 motor de inferencia.
+
+> *(26/08)* El pipeline ya existe y sus pasos se verificaron localmente. Lo que
+> queda es **fusionar `develop` en `main` y empujar**: hasta que no corra en
+> GitHub no hay evidencia que calificar. `main` sigue conteniendo solo el PDF.
 
 ---
 
@@ -51,10 +57,13 @@ backend **pyswip** (no el fallback de subproceso), los 3 casos cargados, la SPA
 sirviéndose, `/api/admin` pidiendo autenticación, y una partida completa
 `caso1 → acusar a marco → veredicto correcto (136 pts)`.
 
-- [ ] **Pendiente: 4 pruebas rotas.** `test_30`, `test_43`, `test_46` y `test_47`
-      siguen apuntando a las rutas Jinja eliminadas (`/`, `/investigacion/{s}/informe`,
-      `/admin`), que ahora las atiende el comodín de la SPA y devuelven 200.
-      Hay que reescribirlas contra la API JSON. **82 de 86 pasan.**
+- [x] **Pruebas migradas a la API *(26/08)*.** Eran 14, no 4: `test_45` estaba
+      parametrizado sobre las 14 secciones del panel Jinja. Comprobar el HTML de
+      `/investigacion/{s}?seccion=X` había dejado de tener sentido — el comodín de
+      la SPA devuelve 200 para cualquier ruta, así que la prueba habría pasado
+      aunque el backend estuviera roto. Ahora se verifica el endpoint de API que
+      alimenta cada sección, más una prueba nueva (`test_45b`) de que el comodín
+      **no** se traga los 404 de `/api/*`. **120 de 120 pasan.**
 
 ---
 
@@ -62,17 +71,20 @@ sirviéndose, `/api/admin` pidiendo autenticación, y una partida completa
 
 - [OK] Los 3 casos cumplen los mínimos exactos: `conteo(4,10,5,5,10)` en `caso1`,
   `caso2` y `caso3`; `cumple_minimos/1` da verdadero en los tres.
-- [OK] Cada caso tiene un culpable único deducible:
-  `caso1 → marco`, `caso2 → quim_sofia`, `caso3 → lic_vera`.
+- [OK] Cada caso tiene un culpable único deducible *(actualizado 26/08, los
+  casos se reescribieron sobre hechos históricos)*:
+  `caso1 → peruggia`, `caso2 → kosminski`, `caso3 → yusupov`.
 - [OK] Los 16 predicados de inferencia exigidos existen y responden
   (`tiene_acceso`, `tuvo_oportunidad`, `tiene_medios`, `coartada_valida`,
   `coartada_invalida`, `contradice_*`, `informacion_falsa`, `relacion_relevante`,
   `nivel_sospecha`, `posible_complice`, `principal_sospechoso`, `responsable`,
   `explicacion`, `explicacion_conclusion`).
-- [OK] Constructos obligatorios presentes: cortes (9 usos), negación `\+` (24),
-  `findall`/listas (33), recursividad, unificación.
-- [OK] **82 de 86 pruebas pasando** (`pytest tests/ -q`); el SMART pedía ≥10. Las 4
-  rotas son de la interfaz vieja, ver sección 0.bis.
+- [OK] Constructos obligatorios presentes: cortes (24 usos), negación `\+` (21),
+  `findall`/listas (26), recursividad, unificación. El pipeline los cuenta en
+  cada ejecución para que no desaparezcan en un refactor.
+- [OK] **120 de 120 pruebas pasando** *(26/08)* con **ambos** backends del puente
+  (`pytest tests/ -q` y `LD_PROLOG_BACKEND=pyswip pytest tests/ -q`); el SMART
+  pedía ≥10.
 - [OK] El módulo de investigación funciona completo, con bitácora por acción.
 - [OK] Módulo administrativo con edición de la KB, validación sintáctica, exportar,
   eliminar con respaldo e historial de sesiones.
@@ -85,19 +97,29 @@ sirviéndose, `/api/admin` pidiendo autenticación, y una partida completa
 
 ## 2. OBLIGATORIO pendiente (bloquea puntos)
 
-### 2.1 CI/CD — GitHub Actions · [Critico] CRÍTICO · [Pospuesto] pospuesto a propósito
-> Decisión del equipo (16/08): primero dejar la contenerización funcionando.
-> Retomar en cuanto el build esté estable — son 30 puntos de la rúbrica y el
-> pipeline necesita margen para ponerse en verde antes del 28/08.
+### 2.1 CI/CD — GitHub Actions · [En progreso] *(26/08: creado, falta empujarlo)*
 
-- [ ] **Crear `.github/workflows/ci.yml`. Hoy no existe en ninguna rama.**
-      El `README.md` y el plan de trabajo lo dan por hecho ("CI/CD Configurado [OK]"),
-      pero `git log --all -- .github` no devuelve nada.
-- [ ] Jobs mínimos: (1) instalar SWI-Prolog + dependencias y correr `pytest`,
-      (2) validar sintaxis de la KB (`swipl -g "consult('prolog/logic_detective.pl')"`),
-      (3) `docker build` de la imagen.
-- [ ] Que el pipeline dispare en `push` y `pull_request` sobre `main` y `develop`.
-- [ ] Añadir el badge de estado al `README.md`.
+- [x] **`.github/workflows/ci.yml` creado.** Cuatro jobs encadenados del más
+      barato al más caro, para que un error de sintaxis en la KB no gaste
+      minutos construyendo la imagen:
+      1. `motor-prolog` — compila la KB, valida los mínimos de los 3 casos,
+         comprueba que la deducción coincide con `solucion/2` y que los
+         constructos obligatorios (cortes, negación, listas) siguen presentes.
+      2. `frontend` — `pnpm lint` (tipos) y `pnpm build` de la SPA.
+      3. `pruebas` — la suite completa en matriz contra **los dos backends**
+         del puente (`pyswip` y `subprocess`).
+      4. `contenedor` — construye la imagen, la arranca, verifica que el
+         backend embebido sea PySwip y no el fallback, que la SPA se sirva,
+         que `/api/admin` dé 401, **resuelve un caso de extremo a extremo** y
+         corre la suite dentro del contenedor.
+- [x] Dispara en `push` y `pull_request` sobre `main` y `develop`, más ramas
+      `feature/**` y `feat/**`. Con `concurrency` para cancelar ejecuciones
+      viejas de la misma rama.
+- [x] Todos los pasos que no dependen de GitHub se verificaron localmente
+      (job `motor-prolog` completo y job `contenedor` completo).
+- [ ] **Empujar la rama y comprobar que sale en verde.** Hasta que no corra en
+      GitHub no hay evidencia que calificar.
+- [ ] Añadir el badge de estado al `README.md` (necesita el primer run).
 
 ### 2.2 Higiene del repositorio · [En progreso] (parcialmente resuelto el 16/08)
 - [x] **`.gitignore` creado.** Cubre secretos (`.env`, `*.pem`, `*.key`,
@@ -171,16 +193,16 @@ Estado de los 10 opcionales listados en el enunciado:
 
 | # | Funcionalidad | Estado | Esfuerzo |
 |---|---|---|---|
-| 1 | Selección aleatoria del caso al iniciar | [No] No implementado | Bajo |
-| 2 | Puntuación por cantidad de consultas | [No] No implementado | Bajo |
-| 3 | Temporizador para resolver el caso | [No] No implementado | Bajo |
+| 1 | Selección aleatoria del caso al iniciar | [OK] **Hecho** (`POST /api/sesiones/aleatorio`) | — |
+| 2 | Puntuación por cantidad de consultas | [OK] **Hecho** (`POST /api/sesiones/{s}/puntos`) | — |
+| 3 | Temporizador para resolver el caso | [OK] **Hecho** (`sesiones.tiempo_inicio`) | — |
 | 4 | Niveles de dificultad | [OK] **Hecho** (`facil`/`medio`/`dificil`) | — |
 | 5 | Sistema de pistas | [OK] **Hecho** (`pista/3`, 5 por sesión) | — |
 | 6 | Visualización gráfica sospechosos–evidencias | [OK] **Hecho** (`GET /api/sesiones/{s}/grafo`, component SVG interactivo) | — |
 | 7 | Exportación del informe en PDF | [OK] **Hecho** (Estilos `@media print`, `window.print()` y `/informe/imprimir`) | — |
 | 8 | Historial de investigaciones resueltas | [OK] **Hecho** (`/historial`, filtros por caso/veredicto y estadísticas) | — |
-| 9 | Generador de casos desde JSON/CSV | [No] No implementado | Alto |
-| 10 | Modo multicaso con estadísticas | [No] No implementado | Medio |
+| 9 | Generador de casos desde JSON/CSV | [OK] **Hecho (26/08)** — JSON + **CSV**, con previsualización | — |
+| 10 | Modo multicaso con estadísticas | [OK] **Hecho (26/08)** — campañas + `/estadisticas` | — |
 
 ### Detalle y ruta de implementación
 
@@ -204,13 +226,24 @@ Estado de los 10 opcionales listados en el enunciado:
 - [x] **(8) Historial** — Vista dedicada `/historial` (`frontend/src/pages/HistorialPage.tsx`)
       con métricas globales (tasa de éxito, promedio de pistas), filtros por caso, estado y veredicto,
       búsqueda en tiempo real y enlaces a informes/continuación. Endpoint `GET /api/historial`.
-- [ ] **(9) Generador desde JSON/CSV** — el admin hoy crea casos desde una
-      plantilla `.pl` (`app/services/admin.py:_plantilla`). Habría que añadir un
-      importador que traduzca JSON/CSV a hechos Prolog y valide con
-      `cumple_minimos/1` antes de escribir. Es el opcional más caro.
-- [ ] **(10) Estadísticas multicaso** — agregar sobre la tabla `sesiones`:
-      partidas por caso, % de aciertos, tiempo medio, pistas medias. Mostrar en
-      `/admin` o en el nuevo `/historial`.
+- [x] **(9) Generador desde JSON/CSV** *(26/08)* — `generar_caso_desde_json/1`
+      ya existía; se añadió el **importador CSV**, que el enunciado pide
+      explícitamente ("JSON **o CSV**"). No duplica lógica: `csv_a_estructura/1`
+      traduce a la misma estructura y delega en el generador JSON, de modo que
+      ambos formatos comparten validación sintáctica y comprobación de mínimos.
+      Endpoints `POST /api/admin/casos/generar-csv` y `.../previsualizar-csv`
+      (traduce y devuelve el conteo **sin escribir nada**). UI en `/admin` con
+      selector JSON/CSV y contraste del conteo contra los mínimos.
+      Formato documentado en `docs/generador_casos.md`. 14 pruebas.
+- [x] **(10) Modo multicaso con estadísticas** *(26/08)* — tabla `campanias` +
+      columna `sesiones.campania` (con migración para bases existentes). Una
+      campaña recorre los tres casos en orden creciente de dificultad; **el
+      orden y cuál toca después los decide Prolog** (`casos_por_dificultad/1`,
+      `siguiente_caso/2`), no Python. Endpoints `POST /api/multicaso`,
+      `GET /api/multicaso/{id}`, `POST /api/multicaso/{id}/siguiente` y
+      `GET /api/estadisticas` (por caso y globales: partidas, aciertos, % de
+      éxito, pistas medias, puntuación media y **tiempo medio**). Página
+      `/estadisticas` en el frontend. 12 pruebas.
 
 **Recomendación:** hacer **(2), (3), (7) y (8)** — los cuatro son de esfuerzo bajo,
 reutilizan datos que ya se guardan y dan cuatro commits repartibles entre
@@ -223,12 +256,12 @@ integrantes distintos. Dejar **(9)** para el final, o no hacerlo.
 | Prioridad | Tarea | Por qué primero |
 |---|---|---|
 | 1 | `.gitignore` + merge a `main` | Sin esto el tutor no ve el proyecto |
-| 2 | `.github/workflows/ci.yml` | 30 pts; hay que dejar tiempo para que el pipeline pase en verde |
+| 2 | ~~Crear `ci.yml`~~ → **empujarlo y verlo en verde** | 30 pts; ya está escrito y verificado localmente |
 | 3 | Despliegue en GCP | 20 pts; depende de que la imagen esté en `main` |
 | 4 | Capturas + manual de usuario | Requisito de admisión; necesita la app corriendo |
 | 5 | Diagrama de flujo + `consultas_ejemplo.md` | Documentación, 10 pts |
 | 6 | Informe de participación | Requisito de admisión, lo hace el coordinador |
-| 7 | Opcionales (2), (3), (7), (8) | Suman valor y generan commits repartibles |
+| 7 | ~~Opcionales~~ — **los 10 están implementados** | Ya no bloquean nada |
 | 8 | Corregir `README.md` y el plan | Que la documentación no afirme lo que no existe |
 
 ---

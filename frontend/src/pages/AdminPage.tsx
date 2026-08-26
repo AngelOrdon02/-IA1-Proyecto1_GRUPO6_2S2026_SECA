@@ -26,8 +26,27 @@ import {
 } from "@/atoms";
 import { BrandLogo } from "@/molecules";
 import { adminApi } from "@/api/adminClient.ts";
-import type { AdminCaso, AdminSesion, AdminEjemplo } from "@/api/adminTypes.ts";
+import type {
+  AdminCaso,
+  AdminSesion,
+  AdminEjemplo,
+  AdminGenerarCasoResponse,
+} from "@/api/adminTypes.ts";
 import { DIFICULTAD_LABELS, ESTADO_LABELS } from "@/lib/constants.ts";
+
+/** Resumen que el panel muestra tras generar un caso, en cualquier formato:
+ *  el CSV delega en el generador JSON, asi que devuelven la misma estructura. */
+function resumenGenerado(res: AdminGenerarCasoResponse): string {
+  const c = res.conteo;
+  return (
+    `Caso ${res.caso} generado en ${res.archivo} ` +
+    `(${c.S ?? 0} sospechosos, ${c.E ?? 0} evidencias, ${c.L ?? 0} lugares, ` +
+    `${c.D ?? 0} declaraciones, ${c.R ?? 0} reglas). ` +
+    (res.cumple_minimos
+      ? "Cumple los mínimos del enunciado."
+      : "Aviso: aún no cumple los mínimos del enunciado.")
+  );
+}
 
 export default function AdminPage() {
   const navigate = useNavigate();
@@ -39,6 +58,16 @@ export default function AdminPage() {
   const [showGenerar, setShowGenerar] = useState(false);
   const [jsonCaso, setJsonCaso] = useState("");
   const [ejemplos, setEjemplos] = useState<AdminEjemplo[]>([]);
+  // Opcional 9 (CSV): contenido pegado y resultado de la previsualizacion.
+  const [csvCaso, setCsvCaso] = useState("");
+  const [formatoGenerar, setFormatoGenerar] = useState<"json" | "csv">("json");
+  const [previsualizacion, setPrevisualizacion] = useState<{
+    sospechosos: number;
+    evidencias: number;
+    lugares: number;
+    declaraciones: number;
+    reglas: number;
+  } | null>(null);
   const [mensajeGenerar, setMensajeGenerar] = useState<string>("");
   const [generando, setGenerando] = useState(false);
   const [creando, setCreando] = useState(false);
@@ -100,13 +129,16 @@ export default function AdminPage() {
     }
   }
 
-  // Carga uno de los JSON de datos/ejemplos/ en el area de texto.
-  async function handleCargarEjemplo(archivo: string) {
+  // Carga un ejemplo de datos/ejemplos/ en el area de texto del formato al
+  // que pertenece.
+  async function handleCargarEjemplo(ejemplo: AdminEjemplo) {
     setErrorMensaje("");
     setMensajeGenerar("");
+    setPrevisualizacion(null);
     try {
-      const res = await adminApi.leerEjemplo(archivo);
-      setJsonCaso(res.contenido);
+      const res = await adminApi.leerEjemplo(ejemplo.archivo);
+      if (ejemplo.formato === "csv") setCsvCaso(res.contenido);
+      else setJsonCaso(res.contenido);
     } catch (e) {
       setErrorMensaje(
         e instanceof Error ? e.message : "Error al leer el ejemplo",
@@ -128,20 +160,47 @@ export default function AdminPage() {
     setGenerando(true);
     try {
       const res = await adminApi.generarCasoJson(datos);
-      const c = res.conteo;
-      setMensajeGenerar(
-        `Caso ${res.caso} generado en ${res.archivo} ` +
-          `(${c.S ?? 0} sospechosos, ${c.E ?? 0} evidencias, ${c.L ?? 0} lugares, ` +
-          `${c.D ?? 0} declaraciones, ${c.R ?? 0} reglas). ` +
-          (res.cumple_minimos
-            ? "Cumple los mínimos del enunciado."
-            : "Aviso: aún no cumple los mínimos del enunciado."),
-      );
+      setMensajeGenerar(resumenGenerado(res));
       setJsonCaso("");
       loadData();
     } catch (e) {
       setErrorMensaje(
         e instanceof Error ? e.message : "Error al generar el caso",
+      );
+    } finally {
+      setGenerando(false);
+    }
+  }
+
+  // Opcional 9 (CSV): traduce el archivo y muestra el conteo, sin escribir nada.
+  async function handlePrevisualizarCsv() {
+    setMensajeGenerar("");
+    setErrorMensaje("");
+    setPrevisualizacion(null);
+    try {
+      const res = await adminApi.previsualizarCsv(csvCaso);
+      setPrevisualizacion(res.conteo);
+    } catch (e) {
+      setErrorMensaje(
+        e instanceof Error ? e.message : "El CSV no se pudo interpretar",
+      );
+    }
+  }
+
+  // Opcional 9 (CSV): genera el caso y recarga el listado.
+  async function handleGenerarCsv() {
+    setMensajeGenerar("");
+    setErrorMensaje("");
+    setGenerando(true);
+    try {
+      const res = await adminApi.generarCasoCsv(csvCaso);
+      setMensajeGenerar(resumenGenerado(res));
+      setCsvCaso("");
+      setPrevisualizacion(null);
+      loadData();
+    } catch (e) {
+      setErrorMensaje(
+        e instanceof Error ? e.message : "Error al generar el caso desde CSV",
       );
     } finally {
       setGenerando(false);
@@ -184,6 +243,10 @@ export default function AdminPage() {
     adminApi.logout();
     navigate("/admin/login");
   }
+
+  const ejemplosDelFormato = ejemplos.filter(
+    (ej) => ej.formato === formatoGenerar,
+  );
 
   if (loading) {
     return (
@@ -265,30 +328,51 @@ export default function AdminPage() {
               }
             />
 
-            {/* Opcional 9: motor de casos desde JSON */}
+            {/* Opcional 9: motor de casos desde JSON o CSV */}
             {showGenerar && (
               <Card tone="raised" className="mb-4 animate-fade-up">
                 <h3 className="mb-1 font-semibold text-text">
-                  Generar caso desde JSON
+                  Generar caso desde archivo
                 </h3>
                 <p className="mb-3 text-sm text-text-muted">
-                  Pega la descripción del caso (personas, lugares, evidencias,
+                  Describe el caso (personas, lugares, evidencias,
                   declaraciones, coartadas, motivos, medios, relaciones y
-                  reglas). El servidor la traduce a hechos Prolog, valida la
-                  sintaxis y carga el caso en el motor.
+                  reglas). El servidor lo traduce a hechos Prolog, valida la
+                  sintaxis en un intérprete aparte y carga el caso en el motor.
                 </p>
-                {ejemplos.length > 0 && (
+
+                {/* Selector de formato: ambos acaban en el mismo generador. */}
+                <div className="mb-3 flex gap-2">
+                  <Button
+                    variant={formatoGenerar === "json" ? "primary" : "ghost"}
+                    size="sm"
+                    onClick={() => setFormatoGenerar("json")}
+                  >
+                    JSON
+                  </Button>
+                  <Button
+                    variant={formatoGenerar === "csv" ? "primary" : "ghost"}
+                    size="sm"
+                    onClick={() => setFormatoGenerar("csv")}
+                  >
+                    CSV
+                  </Button>
+                </div>
+
+                {/* Ejemplos del formato activo: el mismo caso existe en los
+                    dos, asi que cambiar de pestana ofrece los equivalentes. */}
+                {ejemplosDelFormato.length > 0 && (
                   <div className="mb-3 flex flex-wrap items-center gap-2">
                     <span className="text-xs text-text-dim">
                       Cargar un ejemplo:
                     </span>
-                    {ejemplos.map((ej) => (
+                    {ejemplosDelFormato.map((ej) => (
                       <Button
                         key={ej.archivo}
                         variant="ghost"
                         size="sm"
                         title={ej.descripcion || ej.archivo}
-                        onClick={() => handleCargarEjemplo(ej.archivo)}
+                        onClick={() => handleCargarEjemplo(ej)}
                       >
                         <FileJson className="h-3.5 w-3.5" />
                         {ej.titulo}
@@ -296,25 +380,104 @@ export default function AdminPage() {
                     ))}
                   </div>
                 )}
-                <TextArea
-                  label="JSON del caso"
-                  value={jsonCaso}
-                  onChange={(e) => setJsonCaso(e.target.value)}
-                  placeholder='{"id": "caso4", "titulo": "…", "personas": […], …}'
-                  rows={12}
-                  className="font-mono text-xs"
-                />
+
+                {formatoGenerar === "json" ? (
+                  <TextArea
+                    label="JSON del caso"
+                    value={jsonCaso}
+                    onChange={(e) => setJsonCaso(e.target.value)}
+                    placeholder='{"id": "caso4", "titulo": "…", "personas": […], …}'
+                    rows={12}
+                    className="font-mono text-xs"
+                  />
+                ) : (
+                  <>
+                    <TextArea
+                      label="CSV del caso"
+                      value={csvCaso}
+                      onChange={(e) => {
+                        setCsvCaso(e.target.value);
+                        setPrevisualizacion(null);
+                      }}
+                      placeholder={
+                        "tipo,c1,c2,c3,c4,c5\n" +
+                        "caso,caso4,El expediente,Descripción,facil\n" +
+                        "incidente,Robo del sello,despacho,2100\n" +
+                        "persona,ana,Ana Ruiz,sospechoso"
+                      }
+                      rows={12}
+                      className="font-mono text-xs"
+                    />
+                    <p className="mt-2 text-xs text-text-muted">
+                      La primera columna indica el tipo de fila. El formato
+                      completo está en <span className="font-mono">docs/generador_casos.md</span>.
+                    </p>
+                  </>
+                )}
+
+                {/* Conteo devuelto por la previsualizacion, contrastado con los
+                    minimos que exige el enunciado. */}
+                {previsualizacion && (
+                  <div className="mt-3 rounded-lg border border-border bg-surface-sunken p-3">
+                    <p className="mb-2 text-sm font-medium text-text">
+                      Interpretación del archivo
+                    </p>
+                    <ul className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs md:grid-cols-5">
+                      {(
+                        [
+                          ["Sospechosos", previsualizacion.sospechosos, 4],
+                          ["Evidencias", previsualizacion.evidencias, 10],
+                          ["Lugares", previsualizacion.lugares, 5],
+                          ["Declaraciones", previsualizacion.declaraciones, 5],
+                          ["Reglas", previsualizacion.reglas, 10],
+                        ] as [string, number, number][]
+                      ).map(([etiqueta, valor, minimo]) => (
+                        <li key={etiqueta} className="flex justify-between gap-2">
+                          <span className="text-text-muted">{etiqueta}</span>
+                          <span
+                            className={
+                              valor >= minimo
+                                ? "font-mono text-success-soft"
+                                : "font-mono text-danger-soft"
+                            }
+                          >
+                            {valor}/{minimo}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 {mensajeGenerar && (
                   <p className="mt-3 text-sm text-success-soft">
                     {mensajeGenerar}
                   </p>
                 )}
-                <div className="mt-4 flex gap-2">
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {formatoGenerar === "csv" && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={handlePrevisualizarCsv}
+                      disabled={generando || !csvCaso.trim()}
+                    >
+                      Previsualizar
+                    </Button>
+                  )}
                   <Button
                     variant="primary"
                     size="sm"
-                    onClick={handleGenerarJson}
-                    disabled={generando || !jsonCaso.trim()}
+                    onClick={
+                      formatoGenerar === "json"
+                        ? handleGenerarJson
+                        : handleGenerarCsv
+                    }
+                    disabled={
+                      generando ||
+                      !(formatoGenerar === "json" ? jsonCaso : csvCaso).trim()
+                    }
                   >
                     {generando && <Spinner size="sm" />}
                     Generar y cargar

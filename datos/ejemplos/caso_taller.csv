@@ -1,0 +1,71 @@
+tipo,c1,c2,c3,c4,c5
+caso,caso_taller,El taller de la esquina,Caso minimo de prueba: la caja fuerte del taller aparece vacia al cierre.,facil
+incidente,La caja fuerte del taller aparece vacia,oficina,1900
+ventana,1830,1930
+victima,molina
+solucion,ayala
+persona,molina,Don Molina,victima
+persona,ayala,Ayala,sospechoso
+persona,bran,Bran,sospechoso
+persona,cruz,Cruz,sospechoso
+persona,duran,Duran,sospechoso
+persona,tere,Tere Guardia,testigo
+lugar,oficina,Oficina,Area de oficina.
+lugar,pasillo,Pasillo,Area de pasillo.
+lugar,taller,Taller,Area de taller.
+lugar,bodega,Bodega,Area de bodega.
+lugar,porton,Porton,Area de porton.
+conexion,porton,pasillo
+conexion,pasillo,oficina
+conexion,pasillo,taller
+conexion,taller,bodega
+acceso,ayala,porton,llave_del_taller
+acceso,ayala,pasillo,llave_del_taller
+acceso,ayala,oficina,llave_del_taller
+acceso,ayala,taller,llave_del_taller
+acceso,bran,porton,gafete
+acceso,cruz,porton,gafete
+acceso,duran,porton,gafete
+estuvo,ayala,oficina,1900
+estuvo,bran,porton,1900
+estuvo,cruz,bodega,1840
+estuvo,duran,porton,1910
+evento,ev1,1900,oficina,La caja fuerte queda abierta y vacia.
+evento,ev2,1925,porton,Don Molina descubre el faltante.
+evidencia,t01,indicio,Indicio numero 1 recogido en la oficina.,oficina,1900
+vincula,t01,ayala
+situa,t01,ayala,oficina
+evidencia,t02,indicio,Indicio numero 2 recogido en la oficina.,oficina,1900
+evidencia,t03,indicio,Indicio numero 3 recogido en la oficina.,oficina,1900
+evidencia,t04,indicio,Indicio numero 4 recogido en la oficina.,oficina,1900
+evidencia,t05,indicio,Indicio numero 5 recogido en la oficina.,oficina,1900
+evidencia,t06,indicio,Indicio numero 6 recogido en la oficina.,oficina,1900
+evidencia,t07,indicio,Indicio numero 7 recogido en la oficina.,oficina,1900
+evidencia,t08,indicio,Indicio numero 8 recogido en la oficina.,oficina,1900
+evidencia,t09,indicio,Indicio numero 9 recogido en la oficina.,oficina,1900
+evidencia,t10,indicio,Indicio numero 10 recogido en la oficina.,oficina,1900
+declaracion,d1,ayala,Yo ya me habia ido; no entre a la oficina.
+afirma,d1,no_estuvo,ayala,oficina,1900
+declaracion,d2,bran,Estuve fumando en el porton todo el rato.
+afirma,d2,estuvo,bran,porton,1900
+declaracion,d3,cruz,Estaba ordenando la bodega.
+declaracion,d4,duran,"Llegue tarde, apenas entraba por el porton."
+declaracion,d5,tere,Vi salir a Ayala de la oficina con un sobre.
+afirma,d5,vio,tere,ayala,oficina,1900
+coartada,bran,porton,1900,tere
+coartada,cruz,bodega,1840,tere
+coartada,duran,porton,1910,tere
+motivo,ayala,financiero,Le deben tres quincenas y necesita el dinero.
+requiere,clave_de_la_caja
+medio,ayala,clave_de_la_caja
+relacion,ayala,molina,deuda
+regla,tr01,Regla 1 del taller,Descripcion de la regla 1 propia del caso.
+regla,tr02,Regla 2 del taller,Descripcion de la regla 2 propia del caso.
+regla,tr03,Regla 3 del taller,Descripcion de la regla 3 propia del caso.
+regla,tr04,Regla 4 del taller,Descripcion de la regla 4 propia del caso.
+regla,tr05,Regla 5 del taller,Descripcion de la regla 5 propia del caso.
+regla,tr06,Regla 6 del taller,Descripcion de la regla 6 propia del caso.
+regla,tr07,Regla 7 del taller,Descripcion de la regla 7 propia del caso.
+regla,tr08,Regla 8 del taller,Descripcion de la regla 8 propia del caso.
+regla,tr09,Regla 9 del taller,Descripcion de la regla 9 propia del caso.
+regla,tr10,Regla 10 del taller,Descripcion de la regla 10 propia del caso.

@@ -1,0 +1,45 @@
+# =============================================================================
+# Logic Detective — orquestacion en la instancia EC2
+# -----------------------------------------------------------------------------
+# A diferencia del docker-compose.yml de la raiz, este NO construye la imagen:
+# la descarga ya construida y probada del registro de contenedores de GitHub.
+# La instancia solo necesita Docker, no Node ni SWI-Prolog ni el codigo fuente.
+#
+# El pipeline lo copia a ~/logic-detective/docker-compose.yml junto con un .env
+# generado a partir de los secretos del repositorio. No se edita a mano en el
+# servidor: el siguiente despliegue lo sobreescribe.
+# =============================================================================
+services:
+  logic-detective:
+    # IMAGEN la fija el despliegue con el tag del commit desplegado, de modo
+    # que la instancia queda anclada a una version concreta y no a un "latest"
+    # movedizo: si hace falta volver atras, basta con cambiar el tag del .env.
+    image: ${IMAGEN}
+    container_name: logic-detective
+    ports:
+      - "80:8000"
+    environment:
+      LD_PROLOG_BACKEND: auto
+      LD_DB: /app/datos/logic_detective.db
+      LD_ADMIN_USER: ${LD_ADMIN_USER}
+      LD_ADMIN_PASS: ${LD_ADMIN_PASS}
+    volumes:
+      # Sesiones, campanias y bitacoras sobreviven a cada despliegue: el volumen
+      # es de la instancia, no de la imagen.
+      - datos-logic-detective:/app/datos
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/salud').read()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      # Sin limite, los logs de una instancia pequeña acaban llenando el disco.
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  datos-logic-detective:

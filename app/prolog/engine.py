@@ -264,6 +264,18 @@ def obtener_engine() -> BackendProlog:
     return _engine
 
 
+def _intentar(engine: BackendProlog, meta: str, aviso: str) -> None:
+    """Ejecuta una meta de limpieza sin dejar que su fallo bloquee la recarga.
+
+    En el peor caso queda un caso fantasma en memoria, que es mejor que un
+    motor inservible.
+    """
+    try:
+        engine.consultar(meta, limite=1)
+    except ErrorProlog as exc:
+        log.warning("%s: %s", aviso, exc)
+
+
 def reiniciar_engine(casos_vigentes: list[str] | None = None) -> None:
     """Fuerza la reconstruccion del engine.
 
@@ -284,12 +296,17 @@ def reiniciar_engine(casos_vigentes: list[str] | None = None) -> None:
     """
     global _engine
     with _lock_creacion:
-        if _engine is not None and casos_vigentes is not None:
-            try:
+        if _engine is not None:
+            # Primero se releen los archivos de caso desde el disco.
+            # ensure_loaded/1 no vuelve a leer un archivo ya registrado, asi
+            # que sin esto la recarga no veria ni un caso editado ni uno
+            # regenerado con el mismo nombre tras borrarlo.
+            _intentar(_engine, "recargar_archivos_de_casos",
+                      "No se pudieron recargar los archivos de caso")
+            if casos_vigentes is not None:
+                # Red de seguridad: si algun archivo no se pudo descargar, esto
+                # retracta igualmente los hechos de los casos ya eliminados.
                 lista = "[" + ",".join(casos_vigentes) + "]"
-                _engine.consultar(f"purgar_casos_ausentes({lista})", limite=1)
-            except ErrorProlog as exc:
-                # Una purga fallida no debe impedir la recarga: en el peor caso
-                # queda un caso fantasma, que es mejor que un motor inservible.
-                log.warning("No se pudieron purgar los casos ausentes: %s", exc)
+                _intentar(_engine, f"purgar_casos_ausentes({lista})",
+                          "No se pudieron purgar los casos ausentes")
         _engine = None

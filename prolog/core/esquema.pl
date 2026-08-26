@@ -196,3 +196,48 @@ purgar_casos_ausentes(Vigentes) :-
         ( member(C, Cargados), \+ memberchk(C, Vigentes) ),
         purgar_caso(C)
     ).
+
+% ---------------------------------------------------------------------------
+% recargar_archivos_de_casos
+% Vuelve a leer del disco todos los archivos de caso ya cargados, y descarta
+% los que hayan desaparecido.
+%
+% Hace falta por el backend embebido (PySwip): el interprete vive dentro del
+% proceso de Python y sobrevive a la recarga, mientras que ensure_loaded/1 NO
+% relee un archivo que ya figura en el registro de fuentes — ni aunque haya
+% cambiado en disco, ni aunque sus clausulas se hayan retractado. Y unload_file/1
+% borra las clausulas pero deja la entrada del registro, asi que tampoco basta:
+% al borrar un caso y volver a generarlo con el mismo nombre, la directiva del
+% cargador se volvia un no-op y el caso quedaba declarado pero sin un solo
+% hecho, y por tanto sin cumplir los minimos.
+%
+% consult/1 en cambio relee siempre y reemplaza las clausulas del archivo, que
+% es justo lo que se necesita. Con el backend de subproceso no cambia nada,
+% porque cada consulta arranca un interprete limpio.
+% ---------------------------------------------------------------------------
+recargar_archivos_de_casos :-
+    findall(A, archivo_de_caso_cargado(A), Archivos),
+    sort(Archivos, Unicos),
+    forall(member(A, Unicos), recargar_o_descartar(A)).
+
+% archivo_de_caso_cargado(-Archivo)
+% Ruta absoluta de cada fuente cargada que vive en el directorio de casos.
+% Se mira el registro de fuentes y no las clausulas: un caso ya purgado no
+% tiene hechos por los que llegar hasta su archivo.
+archivo_de_caso_cargado(Archivo) :-
+    source_file(Archivo),
+    file_directory_name(Archivo, Directorio),
+    file_base_name(Directorio, casos).
+
+% recargar_o_descartar(+Archivo)
+% Nunca falla: un archivo ilegible no debe dejar el motor a medio recargar.
+% Se consulta por nombre relativo al directorio de trabajo (prolog/), nunca por
+% ruta absoluta, por la expansion de comodines de consult/1 — ver la nota sobre
+% los corchetes en app/prolog/engine.py.
+recargar_o_descartar(Archivo) :-
+    (   exists_file(Archivo)
+    ->  file_base_name(Archivo, Base),
+        atom_concat('casos/', Base, Relativo),
+        catch(consult(Relativo), _, true)
+    ;   catch(unload_file(Archivo), _, true)
+    ).

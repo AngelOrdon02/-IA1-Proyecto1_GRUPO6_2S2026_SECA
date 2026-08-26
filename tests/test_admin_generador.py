@@ -273,3 +273,37 @@ def test_60_los_ejemplos_no_permiten_salir_de_su_carpeta(cliente):
     )
     assert respuesta.status_code == 400
     assert cliente.get("/api/admin/ejemplos").status_code == 401
+
+
+def test_61_regenerar_un_caso_borrado_vuelve_a_cargar_sus_hechos(cliente):
+    """Borrar un caso y volver a generarlo con el mismo id debe recargarlo.
+
+    Regresion: con el backend PySwip el interprete vive dentro del proceso, y
+    ensure_loaded/1 no relee un archivo que ya figura en el registro de fuentes
+    — ni siquiera despues de retractar sus clausulas. La directiva del cargador
+    se volvia un no-op y el caso quedaba declarado pero sin un solo hecho, de
+    modo que dejaba de cumplir los minimos. El backend de subproceso ocultaba
+    el fallo, porque arranca un interprete limpio en cada consulta.
+    """
+    caso = _caso_json()
+
+    primera = cliente.post("/api/admin/casos/generar", json=caso, auth=CREDENCIALES)
+    assert primera.status_code == 200, primera.text
+    assert primera.json()["cumple_minimos"] is True
+
+    cliente.post(
+        "/api/admin/casos/eliminar",
+        json={"archivo": "caso_generado.pl"},
+        auth=CREDENCIALES,
+    )
+
+    segunda = cliente.post("/api/admin/casos/generar", json=caso, auth=CREDENCIALES)
+    assert segunda.status_code == 200, segunda.text
+    assert segunda.json()["conteo"] == primera.json()["conteo"]
+    assert segunda.json()["cumple_minimos"] is True
+
+    cliente.post(
+        "/api/admin/casos/eliminar",
+        json={"archivo": "caso_generado.pl"},
+        auth=CREDENCIALES,
+    )

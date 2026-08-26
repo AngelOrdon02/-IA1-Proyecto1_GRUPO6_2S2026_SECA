@@ -1,16 +1,25 @@
 # =============================================================================
-# Logic Detective — Integracion Continua
+# Logic Detective — Integracion y Despliegue Continuos
 # -----------------------------------------------------------------------------
-# Cuatro trabajos encadenados, del mas barato al mas caro, para que un fallo de
+# Cinco trabajos encadenados, del mas barato al mas caro, para que un fallo de
 # sintaxis en la base de conocimiento no gaste minutos construyendo la imagen:
 #
 #   1. motor-prolog — compila la KB y valida los minimos del enunciado.
 #   2. frontend     — comprueba tipos y compila la SPA de React.
 #   3. pruebas      — suite completa contra los dos backends del puente Prolog.
-#   4. contenedor   — construye la imagen, la arranca y la ejercita de verdad.
+#   4. contenedor   — construye la imagen, la ejercita y, si pasa, la publica.
+#   5. desplegar    — la instala en la instancia EC2 y comprueba que responde.
+#
+# La publicacion vive dentro del trabajo que probo la imagen, y no en uno
+# aparte, para que lo que llega a produccion sea exactamente lo ejercitado: un
+# trabajo posterior tendria que reconstruirla —y podria salir distinta— o
+# pasearla como artefacto de cientos de megas.
+#
+# Publicar y desplegar solo ocurren al empujar a main; cualquier otra rama y
+# cualquier pull request se quedan en la verificacion.
 # =============================================================================
 
-name: CI
+name: CI/CD
 
 on:
   push:
@@ -20,9 +29,20 @@ on:
   workflow_dispatch:
 
 # Si se empuja dos veces seguidas a la misma rama, cancela la ejecucion vieja.
+# En main NO se cancela: interrumpir un despliegue a medias dejaria la
+# instancia con la imagen a medio cambiar.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+# Solo lectura por defecto; el trabajo que publica pide su permiso aparte.
+permissions:
+  contents: read
+
+env:
+  # El nombre del repositorio lleva mayusculas y un guion inicial, y las rutas
+  # del registro deben ir en minusculas, asi que la imagen se nombra aparte.
+  IMAGEN: logic-detective
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -148,6 +168,18 @@ jobs:
     name: Imagen Docker
     runs-on: ubuntu-latest
     needs: [pruebas, frontend]
+    permissions:
+      contents: read
+      # Necesario para empujar la imagen a GHCR. En un pull request desde un
+      # fork el token es de solo lectura pase lo que pase, asi que este permiso
+      # solo tiene efecto en las ejecuciones sobre el propio repositorio.
+      packages: write
+    env:
+      # Se calcula una vez y se reutiliza: las condiciones de los pasos de
+      # publicacion son largas y repetirlas invita a que una se quede atras.
+      EN_MAIN: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+    outputs:
+      imagen: ${{ steps.etiquetas.outputs.imagen }}
     steps:
       - uses: actions/checkout@v4
 
@@ -216,3 +248,136 @@ jobs:
       - name: Registro del contenedor si algo fallo
         if: failure()
         run: docker logs ld-ci
+
+      # --- Publicacion (solo en main) -----------------------------------------
+      # A partir de aqui la imagen ya demostro que arranca, deduce y sirve la
+      # SPA. Se publica esa misma, sin reconstruirla.
+      - name: Calcular la etiqueta de la imagen
+        id: etiquetas
+        if: ${{ env.EN_MAIN == 'true' }}
+        # El propietario del repositorio puede llevar mayusculas y las rutas de
+        # GHCR tienen que ir en minusculas.
+        run: |
+          duenio=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          ruta="ghcr.io/$duenio/${{ env.IMAGEN }}"
+          echo "ruta=$ruta" >> "$GITHUB_OUTPUT"
+          echo "imagen=$ruta:${{ github.sha }}" >> "$GITHUB_OUTPUT"
+
+      - name: Autenticarse en el registro
+        if: ${{ env.EN_MAIN == 'true' }}
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Etiquetar y subir
+        # El tag del commit es el que despliega la instancia: deja anclada la
+        # version desplegada y permite volver atras cambiando una linea del
+        # .env. `latest` solo sirve de atajo para mirar la ultima a mano.
+        if: ${{ env.EN_MAIN == 'true' }}
+        run: |
+          ruta="${{ steps.etiquetas.outputs.ruta }}"
+          docker tag logic-detective:ci "$ruta:${{ github.sha }}"
+          docker tag logic-detective:ci "$ruta:latest"
+          docker push "$ruta:${{ github.sha }}"
+          docker push "$ruta:latest"
+
+  # ---------------------------------------------------------------------------
+  desplegar:
+    name: Desplegar en EC2
+    runs-on: ubuntu-latest
+    needs: contenedor
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: produccion
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preparar la clave SSH
+        # La clave vive solo en el disco efimero del runner y con permisos 600,
+        # que es lo que exige OpenSSH. La huella del host se fija con
+        # ssh-keyscan: sin ella habria que desactivar la verificacion, y eso
+        # abre la puerta a que un intermediario reciba el despliegue.
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/despliegue
+          chmod 600 ~/.ssh/despliegue
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Copiar la orquestacion
+        run: |
+          ssh -i ~/.ssh/despliegue "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
+            "mkdir -p ~/logic-detective"
+          scp -i ~/.ssh/despliegue despliegue/docker-compose.prod.yml \
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/logic-detective/docker-compose.yml"
+
+      - name: Escribir la configuracion en la instancia
+        # Los secretos viajan por la entrada estandar de la sesion SSH, no como
+        # argumentos: un argumento quedaria visible en la tabla de procesos de
+        # la instancia para cualquier usuario conectado.
+        env:
+          IMAGEN_DESPLEGADA: ${{ needs.contenedor.outputs.imagen }}
+          LD_ADMIN_USER: ${{ secrets.LD_ADMIN_USER }}
+          LD_ADMIN_PASS: ${{ secrets.LD_ADMIN_PASS }}
+        run: |
+          printf 'IMAGEN=%s\nLD_ADMIN_USER=%s\nLD_ADMIN_PASS=%s\n' \
+            "$IMAGEN_DESPLEGADA" "$LD_ADMIN_USER" "$LD_ADMIN_PASS" \
+          | ssh -i ~/.ssh/despliegue "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
+              "cat > ~/logic-detective/.env && chmod 600 ~/logic-detective/.env"
+
+      - name: Descargar la imagen e intercambiar el contenedor
+        # El script se manda por la entrada estandar (`bash -s`) en vez de como
+        # un argumento de ssh: asi se escribe una sola vez, sin anidar comillas
+        # dentro de comillas, y ni el token ni la clave aparecen en la tabla de
+        # procesos de la instancia.
+        run: |
+          ssh -i ~/.ssh/despliegue \
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" bash -s <<'REMOTO'
+          set -euo pipefail
+          cd ~/logic-detective
+
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+          docker compose pull
+          docker compose up -d --remove-orphans
+
+          # El token del pipeline caduca al terminar la ejecucion, pero dejarlo
+          # escrito en ~/.docker/config.json no aporta nada y es un secreto mas
+          # que custodiar en la instancia.
+          docker logout ghcr.io
+
+          # Se conservan una semana de imagenes viejas: lo justo para poder
+          # volver a una version anterior sin llenar el disco de la instancia.
+          docker image prune -af --filter 'until=168h'
+          REMOTO
+
+      - name: Comprobar que la version desplegada responde
+        # Se consulta desde dentro de la instancia: asi el despliegue se valida
+        # aunque el grupo de seguridad no abra el puerto al mundo. Si no
+        # responde, se vuelca el log del contenedor y el trabajo falla, que es
+        # lo que hace visible un despliegue roto en lugar de silencioso.
+        run: |
+          ssh -i ~/.ssh/despliegue \
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" bash -s <<'REMOTO'
+          set -uo pipefail
+          cd ~/logic-detective
+
+          for intento in $(seq 1 30); do
+            if curl -sf http://127.0.0.1/salud > /dev/null; then
+              echo "Aplicacion arriba tras $intento intento(s)"
+              curl -s http://127.0.0.1/salud; echo
+              curl -sf http://127.0.0.1/api/casos > /dev/null \
+                && echo "La API sirve el listado de casos"
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "La aplicacion no respondio a tiempo"
+          docker compose ps
+          docker compose logs --tail 100
+          exit 1
+          REMOTO
+
+      - name: Borrar la clave del runner
+        if: always()
+        run: rm -f ~/.ssh/despliegue

@@ -459,3 +459,105 @@ export interface HistorialResponse {
   sesiones: HistorialSesion[];
   estadisticas: HistorialEstadisticas;
 }
+
+// ---------------------------------------------------------------------------
+// Opcional 10 — Modo multicaso y estadisticas de resolucion
+// ---------------------------------------------------------------------------
+
+export interface MulticasoSesion {
+  sesion: string;
+  caso: string;
+  titulo: string;
+  estado: string;
+  veredicto: string | null;
+  acusado: string | null;
+  puntuacion: number | null;
+  pistas: number | null;
+  duracion_seg: number | null;
+  duracion: string | null;
+}
+
+export interface MulticasoInicio {
+  ok: boolean;
+  campania: string;
+  orden: string[];
+  total: number;
+  completados: number;
+  sesion: string;
+  caso: string;
+}
+
+export interface MulticasoEstado {
+  ok: boolean;
+  campania: string;
+  estado: string;
+  orden: string[];
+  total: number;
+  completados: number;
+  aciertos: number;
+  tasa_exito: number;
+  puntuacion_total: number;
+  puntuacion_media: number | null;
+  sesion_en_curso: string | null;
+  siguiente_caso: string | null;
+  completada: boolean;
+  sesiones: MulticasoSesion[];
+}
+
+export interface MulticasoPaso {
+  ok: boolean;
+  campania: string;
+  caso: string;
+  sesion: string;
+  completados: number;
+  total: number;
+}
+
+export interface EstadisticaCaso {
+  caso: string;
+  titulo: string;
+  dificultad: string;
+  partidas: number;
+  en_curso: number;
+  cerradas: number;
+  aciertos: number;
+  fallos: number;
+  tasa_exito: number;
+  pistas_medias: number | null;
+  puntuacion_media: number | null;
+  tiempo_medio_seg: number | null;
+  tiempo_medio: string | null;
+}
+
+export interface CampaniaResumen {
+  id: string;
+  iniciada: string;
+  cerrada: string | null;
+  estado: string;
+  orden: string[];
+  sesiones: number;
+  aciertos: number;
+  cerradas: number;
+  puntuacion_media: number | null;
+}
+
+export interface EstadisticasResponse {
+  ok: boolean;
+  globales: {
+    total: number;
+    resueltas: number;
+    fallidas: number;
+    en_curso: number;
+    tasa_exito: number;
+    promedio_pistas: number;
+    tiempo_medio_seg: number | null;
+    tiempo_medio: string | null;
+  };
+  por_caso: EstadisticaCaso[];
+  multicaso: {
+    campanias: number;
+    completadas: number;
+    en_curso: number;
+    detalle: CampaniaResumen[];
+  };
+}

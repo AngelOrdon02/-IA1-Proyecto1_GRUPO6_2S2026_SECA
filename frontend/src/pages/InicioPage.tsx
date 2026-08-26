@@ -6,6 +6,7 @@ import {
   FolderOpen,
   History,
   Shuffle,
+  Layers,
 } from "lucide-react";
 import AuraBackground from "@/organisms/AuraBackground.tsx";
 import PasosInvestigacion from "@/organisms/PasosInvestigacion.tsx";
@@ -146,12 +147,21 @@ export default function InicioPage() {
 
             <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
               <Divider label="Casos disponibles" className="flex-1" />
-              <Link to="/historial">
-                <Button variant="ghost" size="sm" className="text-accent-soft hover:text-accent">
-                  <History className="h-4 w-4" />
-                  Ver Historial y Estadísticas
-                </Button>
-              </Link>
+              <div className="flex flex-wrap gap-2">
+                <Link to="/historial">
+                  <Button variant="ghost" size="sm" className="text-accent-soft hover:text-accent">
+                    <History className="h-4 w-4" />
+                    Historial
+                  </Button>
+                </Link>
+                {/* Opcional 10: modo multicaso y estadisticas de resolucion. */}
+                <Link to="/estadisticas">
+                  <Button variant="ghost" size="sm" className="text-accent-soft hover:text-accent">
+                    <Layers className="h-4 w-4" />
+                    Modo multicaso
+                  </Button>
+                </Link>
+              </div>
             </div>
 
             {loading ? (

@@ -52,6 +52,12 @@ class GuardarFuenteRequest(BaseModel):
     contenido: str
 
 
+class GenerarCsvRequest(BaseModel):
+    """Contenido crudo de un archivo CSV con la definicion de un caso."""
+
+    contenido: str
+
+
 class EliminarCasoRequest(BaseModel):
     archivo: str
 
@@ -94,6 +100,42 @@ async def api_admin_generar_caso(datos: dict, usuario: Autenticado):
     """Opcional 9: genera un caso nuevo a partir de su descripcion en JSON."""
     resultado = servicio.generar_caso_desde_json(datos)
     return {"ok": True, **resultado}
+
+
+@router.post("/casos/generar-csv")
+async def api_admin_generar_caso_csv(datos: GenerarCsvRequest, usuario: Autenticado):
+    """Opcional 9: genera un caso nuevo a partir de un CSV.
+
+    El CSV se traduce a la misma estructura del generador JSON y se delega en
+    el, de modo que ambos formatos comparten validacion y comprobacion de
+    minimos. El formato esta documentado en docs/generador_casos.md.
+    """
+    resultado = servicio.generar_caso_desde_csv(datos.contenido)
+    return {"ok": True, **resultado}
+
+
+@router.post("/casos/previsualizar-csv")
+async def api_admin_previsualizar_csv(datos: GenerarCsvRequest, usuario: Autenticado):
+    """Traduce el CSV y devuelve la estructura, SIN escribir nada.
+
+    Permite al administrador comprobar como se interpreto su archivo antes de
+    generar el caso: un CSV mal formado se detecta aqui, no despues de haber
+    escrito un .pl y tocado el cargador.
+    """
+    estructura = servicio.csv_a_estructura(datos.contenido)
+    return {
+        "ok": True,
+        "estructura": estructura,
+        "conteo": {
+            "sospechosos": sum(
+                1 for p in estructura.get("personas", []) if p.get("rol") == "sospechoso"
+            ),
+            "evidencias": len(estructura.get("evidencias", [])),
+            "lugares": len(estructura.get("lugares", [])),
+            "declaraciones": len(estructura.get("declaraciones", [])),
+            "reglas": len(estructura.get("reglas", [])),
+        },
+    }
 
 
 @router.post("/casos/eliminar")

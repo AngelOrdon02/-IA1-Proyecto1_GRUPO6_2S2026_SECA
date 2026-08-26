@@ -240,3 +240,35 @@ async def api_puntos(sesion: str, datos: DeltaPuntos):
     Respuesta: { "ok": true, "puntuacion": 85, "delta": -5 }
     """
     return {"ok": True, **inv.registrar_puntos(sesion, datos.delta)}
+
+
+# ---------------------------------------------------------------------------
+# Opcional 10 — Modo multicaso con estadisticas de resolucion
+# ---------------------------------------------------------------------------
+
+@router.post("/multicaso")
+async def api_multicaso_iniciar():
+    """Abre una campania multicaso y arranca el primer caso.
+
+    El orden de los casos (creciente en dificultad) lo decide Prolog con
+    casos_por_dificultad/1.
+    """
+    return {"ok": True, **inv.iniciar_multicaso()}
+
+
+@router.get("/multicaso/{campania}")
+async def api_multicaso_estado(campania: str):
+    """Avance de la campania y metricas acumuladas."""
+    return {"ok": True, **inv.estado_multicaso(campania)}
+
+
+@router.post("/multicaso/{campania}/siguiente")
+async def api_multicaso_siguiente(campania: str):
+    """Arranca la investigacion del siguiente caso de la campania."""
+    return {"ok": True, **inv.siguiente_multicaso(campania)}
+
+
+@router.get("/estadisticas")
+async def api_estadisticas():
+    """Estadisticas de resolucion por caso, globales y de campanias."""
+    return {"ok": True, **inv.estadisticas_resolucion()}

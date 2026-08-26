@@ -264,12 +264,32 @@ def obtener_engine() -> BackendProlog:
     return _engine
 
 
-def reiniciar_engine() -> None:
+def reiniciar_engine(casos_vigentes: list[str] | None = None) -> None:
     """Fuerza la reconstruccion del engine.
 
     Lo usa el modulo administrativo tras modificar los archivos de caso, para
     que la base de conocimiento se recargue sin reiniciar el servidor.
+
+    `casos_vigentes` es la lista de casos que DEBEN quedar cargados. Se necesita
+    por como funciona PySwip: el interprete de SWI-Prolog vive dentro del
+    proceso de Python, asi que soltar el objeto del engine no descarta las
+    clausulas ya consultadas. Al borrar un archivo de caso su .pl desaparece del
+    disco, pero sus hechos seguirian en memoria y el caso continuaria
+    apareciendo en el listado.
+
+    Por eso, antes de soltar el engine, se purgan del interprete los casos que
+    ya no figuran entre los vigentes. Con el backend de subproceso esto es
+    innecesario (cada consulta arranca un interprete limpio), pero ejecutarlo
+    igual mantiene identico el comportamiento de los dos backends.
     """
     global _engine
     with _lock_creacion:
+        if _engine is not None and casos_vigentes is not None:
+            try:
+                lista = "[" + ",".join(casos_vigentes) + "]"
+                _engine.consultar(f"purgar_casos_ausentes({lista})", limite=1)
+            except ErrorProlog as exc:
+                # Una purga fallida no debe impedir la recarga: en el peor caso
+                # queda un caso fantasma, que es mejor que un motor inservible.
+                log.warning("No se pudieron purgar los casos ausentes: %s", exc)
         _engine = None

@@ -76,7 +76,7 @@ export default function AdminEditorPage() {
             <h1 className="truncate font-mono text-sm text-text">{archivo}</h1>
             {modificado && (
               <span className="shrink-0 rounded-xs bg-warning/12 px-1.5 py-0.5 text-xs font-medium text-warning-soft">
-                Sin guardar
+                Sin Guardar
               </span>
             )}
           </div>

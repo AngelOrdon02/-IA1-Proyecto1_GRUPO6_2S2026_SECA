@@ -309,6 +309,39 @@ jobs:
           scp -i ~/.ssh/despliegue despliegue/docker-compose.prod.yml \
             "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/logic-detective/docker-compose.yml"
 
+      - name: Comprobar que la instancia esta lista
+        # Se valida ANTES de tocar nada: si el despliegue se cae a mitad, la
+        # version anterior ya se paro y el servicio queda abajo por un problema
+        # que se podia haber detectado sin riesgo. Los dos fallos habituales
+        # tienen mensaje propio, porque el error crudo de Docker ("permission
+        # denied ... docker.sock") no dice que hay que hacer.
+        run: |
+          ssh -i ~/.ssh/despliegue \
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" bash -s <<'REMOTO'
+          set -uo pipefail
+
+          if ! command -v docker > /dev/null; then
+            echo "Docker no esta instalado en la instancia."
+            echo "Instalalo con el script de arranque de despliegue/README.md."
+            exit 1
+          fi
+
+          if ! docker ps > /dev/null 2>&1; then
+            echo "El usuario $(whoami) no puede hablar con el demonio de Docker."
+            echo "En la instancia:  sudo usermod -aG docker \$USER"
+            echo "No hace falta reiniciar: la siguiente sesion SSH ya entra con"
+            echo "el grupo aplicado, y el pipeline abre una sesion nueva."
+            exit 1
+          fi
+
+          if ! docker compose version > /dev/null 2>&1; then
+            echo "Falta el plugin docker-compose (paquete docker-compose-plugin)."
+            exit 1
+          fi
+
+          echo "Instancia lista: $(docker --version), $(docker compose version)"
+          REMOTO
+
       - name: Escribir la configuracion en la instancia
         # Los secretos viajan por la entrada estandar de la sesion SSH, no como
         # argumentos: un argumento quedaria visible en la tabla de procesos de

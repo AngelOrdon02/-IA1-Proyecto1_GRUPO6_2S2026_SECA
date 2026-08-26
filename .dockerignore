@@ -40,9 +40,16 @@ credenciales*.json
 service-account*.json
 
 # --- Datos de ejecucion ------------------------------------------------------
-# La base de datos vive en un volumen, no en la imagen.
+# La base de datos y los respaldos viven en un volumen, no en la imagen.
 datos/
 !datos/.gitkeep
+
+# Los casos de ejemplo son la excepcion: no son estado, son contenido que el
+# panel de administracion sirve, asi que tienen que viajar en la imagen. Sin
+# esta reincorporacion, /api/admin/ejemplos devuelve una lista vacia en el
+# despliegue y la pestaña del panel aparece en blanco.
+!datos/ejemplos
+!datos/ejemplos/**
 
 # --- Documentacion y notas ---------------------------------------------------
 docs/

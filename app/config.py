@@ -27,6 +27,14 @@ TIMEOUT_CONSULTA = int(os.getenv("LD_TIMEOUT", "30"))
 # --- Persistencia -----------------------------------------------------------
 RUTA_BD = Path(os.getenv("LD_DB", RAIZ / "datos" / "logic_detective.db"))
 
+# --- Casos de ejemplo -------------------------------------------------------
+# Los ejemplos que ofrece el panel de administracion son contenido de la
+# aplicacion, no estado: viajan con ella y se actualizan al desplegar. En el
+# contenedor NO pueden vivir bajo datos/, porque ahi va montado el volumen de
+# la instancia y taparia el directorio de la imagen. De ahi que la ruta sea
+# ajustable: en local es datos/ejemplos/, en la imagen es /app/ejemplos.
+DIR_EJEMPLOS = Path(os.getenv("LD_EJEMPLOS", RAIZ / "datos" / "ejemplos"))
+
 # --- Aplicacion -------------------------------------------------------------
 NOMBRE_APP = "Logic Detective"
 DESCRIPCION_APP = (

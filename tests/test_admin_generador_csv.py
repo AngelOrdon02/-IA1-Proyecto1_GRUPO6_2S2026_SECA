@@ -300,7 +300,7 @@ def test_los_ejemplos_csv_generan_el_mismo_caso_que_sus_gemelos_json(cliente):
     from app import config
 
     for nombre in ("caso_biblioteca", "caso_taller"):
-        base = config.RAIZ / "datos" / "ejemplos"
+        base = config.DIR_EJEMPLOS
         caso_json = json.loads((base / f"{nombre}.json").read_text(encoding="utf-8"))
         caso_csv = (base / f"{nombre}.csv").read_text(encoding="utf-8")
         generado = Path(config.RAIZ / "prolog" / "casos" / f"{nombre}.pl")

@@ -27,7 +27,7 @@ from app.storage import db
 
 DIR_CASOS = config.RAIZ / "prolog" / "casos"
 DIR_RESPALDOS = config.RAIZ / "datos" / "respaldos"
-DIR_EJEMPLOS = config.RAIZ / "datos" / "ejemplos"
+DIR_EJEMPLOS = config.DIR_EJEMPLOS
 ARCHIVO_CARGA = config.RAIZ / "prolog" / "logic_detective.pl"
 
 _ID_CASO = re.compile(r"^[a-z][a-z0-9_]{2,30}$")

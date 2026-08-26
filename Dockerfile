@@ -54,6 +54,11 @@ COPY app/    ./app/
 COPY prolog/ ./prolog/
 COPY tests/  ./tests/
 
+# Los ejemplos del panel van a /app/ejemplos y NO a /app/datos/ejemplos: sobre
+# datos/ se monta el volumen de la instancia, que taparia el directorio de la
+# imagen y dejaria los ejemplos congelados en la version del primer arranque.
+COPY datos/ejemplos/ ./ejemplos/
+
 # --- Frontend compilado -----------------------------------------------------
 COPY --from=frontend-builder /build/dist ./frontend/dist
 
@@ -65,6 +70,7 @@ RUN useradd --create-home --shell /bin/bash detective \
 USER detective
 
 ENV LD_DB=/app/datos/logic_detective.db \
+    LD_EJEMPLOS=/app/ejemplos \
     LD_PROLOG_BACKEND=auto \
     PYTHONUNBUFFERED=1
 

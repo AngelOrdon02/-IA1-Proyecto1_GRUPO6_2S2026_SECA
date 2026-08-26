@@ -95,7 +95,7 @@ export default function HistorialPage() {
                 className="inline-flex items-center gap-2 text-sm text-text-muted transition-colors hover:text-text"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Volver a la selección de casos
+                Volver a la Selección de Casos
               </Link>
             </div>
 

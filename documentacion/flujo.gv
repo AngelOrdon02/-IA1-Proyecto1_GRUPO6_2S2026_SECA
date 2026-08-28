@@ -1,0 +1,147 @@
+// =============================================================================
+// Logic Detective — Diagrama de flujo general
+// -----------------------------------------------------------------------------
+// Compilar con Graphviz:
+//   dot -Tpng flujo.gv -o flujo.png
+//   dot -Tsvg flujo.gv -o flujo.svg
+// =============================================================================
+
+digraph "LogicDetective" {
+  // ------------------------------------------------------------------ Estilo
+  rankdir=TB;
+  bgcolor="#0e0e12";
+  fontname="Helvetica";
+  fontcolor="#e6e6f0";
+  label="Logic Detective — Flujo general del sistema";
+  labelloc="t";
+  newrank=true;
+
+  node  [fontname="Helvetica", fontsize=11, style="rounded,filled",
+         fillcolor="#1a1a22", color="#3a3a4a", fontcolor="#e6e6f0",
+         shape=box, margin="0.15,0.08"];
+  edge  [fontname="Helvetica", fontsize=9, color="#5a5a6e",
+         fontcolor="#8a8aa0"];
+
+  // ------------------------------------------------------- Actores / capas
+  subgraph cluster_usuario {
+    label="Usuario";
+    fontcolor="#9aa0ff";
+    style="rounded,dashed";
+    color="#2e2e40";
+    node [fillcolor="#2a1a3a", color="#6a4a9a"];
+    detective [label="Detective\n(jugador)"];
+    admin     [label="Administrador"];
+  }
+
+  subgraph cluster_frontend {
+    label="Frontend — SPA React (Vite + TypeScript)";
+    style="rounded,dashed";
+    color="#123a2e";
+    node [fillcolor="#0f2f28", color="#2f8a70"];
+    inicio      [label="Inicio\n(casos / caso sorpresa / campaña)"];
+    panel       [label="Panel de investigación\nchat + expediente"];
+    informe     [label="Informe final\n(imprimible)"];
+    historial   [label="Historial y estadísticas"];
+    admin_ui    [label="Panel de administración\n(CRUD de casos + editor)"];
+  }
+
+  subgraph cluster_api {
+    label="Backend — FastAPI (Python)";
+    style="rounded,dashed";
+    color="#1e2f44";
+    node [fillcolor="#16233a", color="#3f6fb0"];
+    router_api    [label="routers/api.py\ncasos · sesiones · acciones\nhistorial · estadísticas"];
+    router_admin  [label="routers/api_admin.py\n(HTTP Basic Auth)"];
+    serv_inv      [label="services/investigacion.py\nacciones del detective\nbitácora · validación de átomos"];
+    serv_admin    [label="services/admin.py\nCRUD · editor · generador JSON/CSV"];
+  }
+
+  subgraph cluster_puente {
+    label="Puente Python ↔ Prolog (única vía)";
+    style="rounded,dashed";
+    color="#4a3a1e";
+    node [fillcolor="#3a2f16", color="#c0a03f"];
+    engine [label="app/prolog/engine.py\nPySwip │ subprocess\n(lock global · consulta_json/3)"];
+  }
+
+  subgraph cluster_prolog {
+    label="Motor de inferencia — SWI-Prolog";
+    style="rounded,dashed";
+    color="#4a1e2e";
+    node [fillcolor="#3a1622", color="#c03f6f"];
+    api_json    [label="api_json.pl\nserialización JSON"];
+    motor       [label="motor.pl · sospecha.pl\ncontradicciones.pl · explicacion.pl\n(16 predicados de inferencia)"];
+    casos       [label="casos/caso{1,2,3}.pl\nhechos + regla_caso/4\n(solucion/2)"];
+  }
+
+  subgraph cluster_datos {
+    label="Persistencia — SQLite";
+    style="rounded,dashed";
+    color="#1e3a2e";
+    node [fillcolor="#122a22", color="#3fb080"];
+    sqlite [label="sesiones · descubrimientos\nbitácora · campañas"];
+  }
+
+  subgraph cluster_infra {
+    label="Infraestructura";
+    style="rounded,dashed";
+    color="#3a2e1e";
+    node [fillcolor="#2a2416", color="#c09a3f"];
+    ci [label="CI/CD — GitHub Actions\n(5 trabajos: motor → frontend →\npruebas → imagen GHCR → EC2)"];
+    instancia [label="Despliegue\nDocker · puerto 80/8000\nvolumen de datos"];
+  }
+
+  // --------------------------------------------------------- Flujo principal
+  detective -> inicio;
+  detective -> panel;
+  detective -> historial;
+  detective -> informe;
+
+  inicio -> router_api [label="1 · crear sesión (POST /api)"];
+  panel -> router_api   [label="1 · acción del detective (POST)"];
+  informe -> router_api [label="2 · datos del informe"];
+  historial -> router_api [label="2 · consultas (GET)"];
+
+  router_api -> serv_inv [label="3 · traducir acción"];
+  serv_inv -> engine    [label="4 · consulta Prolog (meta segura)"];
+  serv_inv -> sqlite    [label="bitácora + descubrimientos"];
+
+  engine -> api_json    [label="5 · consulta_json/3"];
+  api_json -> motor     [label="6 · reglas de inferencia"];
+  motor -> casos        [label="7 · hechos del caso"];
+  casos -> motor        [label="soluciones"];
+  motor -> api_json     [label="8 · JSON resultante"];
+  api_json -> engine    [label="9 · respuestas en JSON"];
+  engine -> serv_inv    [label="10 · resultados traducidos"];
+  serv_inv -> router_api;
+  router_api -> panel
+       [label="11 · respuesta mostrada en el chat\ny actualiza el expediente"];
+
+  // ---------------------------------------------------- Flujo de acusación
+  panel -> router_api [label="Acusar (POST /api/.../acusar)"];
+  router_api -> serv_inv [label="verificar estado"];
+  serv_inv -> engine     [label="comparar con responsable/2"];
+  motor -> casos [label="responsable/2", style=invis];
+  engine -> serv_inv [label="veredicto correcto/incorrecto"];
+  serv_inv -> sqlite [label="cerrar sesión"];
+  serv_inv -> router_api;
+
+  // ------------------------------------------------------------- Admin flow
+  admin -> admin_ui;
+  admin_ui -> router_admin [label="1 · sesión + operación"];
+  router_admin -> serv_admin [label="2 · operación"];
+  serv_admin -> engine [label="recargar KB / validar sintaxis"];
+  engine -> motor [label="consultar KB en intérprete aparte"];
+  motor -> engine [label="errores de sintaxis / OK"];
+  serv_admin -> casos [label="guardar/eliminar archivo .pl"];
+  serv_admin -> sqlite [label="respaldo automático"];
+
+  // ------------------------------------------------------------ Infraestructura
+  ci -> instancia [label="package → pull (commit anclado)"];
+  instancia -> router_api [label="proceso en contenedor"];
+  instancia -> sqlite [label="volumen persistente"];
+
+  // -------------------------------------------------------------- Pie
+  { rank=sink; leyenda [shape=none, fontsize=9,
+    label="Claves de lectura:\n1..11 = recorrido de una acción del detective\n↔ = única frontera Python/Prolog\nAdmin = ejecución de código en el servidor (proteger con credenciales)"]; }
+}

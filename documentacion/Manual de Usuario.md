@@ -26,7 +26,7 @@ responsable.
 3. Deberías ver la pantalla de **inicio**. Desde aquí eliges un caso para
    investigar.
 
-[CAPTURA: pantalla de inicio con los casos disponibles]
+![Pantalla de inicio con los casos disponibles](img/inicio_casos.png)
 
 ---
 
@@ -39,7 +39,7 @@ La pantalla de inicio te muestra:
 - Botón **Caso sorpresa**: el sistema elige un caso al azar para ti.
 - Enlaces a **Historial** (investigaciones pasadas) y **Estadísticas**.
 
-[CAPTURA: botón "caso sorpresa" y lista de casos]
+![Botón "caso sorpresa" y lista de casos](img/caso_sorpresa.png)
 
 Para empezar, pulsa el botón **Investigar** del caso que quieras resolver.
 
@@ -56,7 +56,7 @@ Al entrar a un caso se abre el **panel de investigación**. Tiene tres zonas:
 - **Barra superior**: título del caso, dificultad, estado, **puntuación** y
   **cronómetro**.
 
-[CAPTURA: panel de investigación con las tres zonas señaladas]
+![Panel de investigación con las tres zonas señaladas](img/panel_investigacion.png)
 
 > **Dato clave:** Empezarás conociendo solo a las **personas** y **lugares**.
 > Las declaraciones, evidencias y los eventos que ocurrieron deberás
@@ -85,7 +85,7 @@ bitácora.
 2. El sistema te mostrará su **declaración** y su **coartada** (dónde decía
    estar en el momento del suceso).
 
-[CAPTURA: interrogatorio de una persona mostrando declaración y coartada]
+![Interrogatorio mostrando declaración y coartada](img/interrogatorio.png)
 
 ### 4.2 Investigar un lugar
 
@@ -93,7 +93,7 @@ bitácora.
 2. El sistema te cuenta qué **eventos** ocurrieron ahí y puede revelar
    **evidencias** que estaban escondidas.
 
-[CAPTURA: inspección de un lugar con evento y evidencia nueva]
+![Inspección de un lugar con evento y evidencia nueva](img/inspeccion_lugar.png)
 
 ### 4.3 Examinar una evidencia
 
@@ -152,7 +152,7 @@ Al cerrarse la sesión aparece el botón **Ver informe**. El informe contiene:
 
 Puedes imprimirlo o guardarlo como PDF desde el navegador.
 
-[CAPTURA: informe final imprimible]
+![Informe final imprimible](img/informe_final.png)
 
 ---
 
@@ -192,7 +192,7 @@ El módulo administrativo gestiona los casos del sistema.
    - **Eliminar** un caso (se conserva un respaldo automático).
    - **Supervisar** el historial de sesiones de todos los usuarios.
 
-[CAPTURA: panel de administración con la lista de casos]
+![Panel de administración con la lista de casos](img/panel_admin.png)
 
 > **Advertencia de seguridad:** el panel edita código que el servidor ejecuta.
 > No compartas las credenciales y **cambia las de fábrica** antes de publicar la
@@ -236,4 +236,4 @@ investigando con las demás acciones.
 
 **¿Quién gana el juego?**
 Resolver un caso con **veredicto correcto**, la mayor puntuación posible y la
-menor cantidad de acciones/pistas. El informe final te resumen todo.
+menor cantidad de acciones/pistas. El informe final lo resume todo.

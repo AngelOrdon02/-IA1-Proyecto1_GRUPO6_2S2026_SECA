@@ -1,13 +1,13 @@
-// =============================================================================
+// ============================================================================
 // Logic Detective — Diagrama de flujo general
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Compilar con Graphviz:
 //   dot -Tpng flujo.gv -o flujo.png
 //   dot -Tsvg flujo.gv -o flujo.svg
-// =============================================================================
+// ============================================================================
 
 digraph "LogicDetective" {
-  // ------------------------------------------------------------------ Estilo
+  // -------------------------------------------------------------- Estilo
   rankdir=TB;
   bgcolor="#0e0e12";
   fontname="Helvetica";
@@ -22,7 +22,7 @@ digraph "LogicDetective" {
   edge  [fontname="Helvetica", fontsize=9, color="#5a5a6e",
          fontcolor="#8a8aa0"];
 
-  // ------------------------------------------------------- Actores / capas
+  // -------------------------------------------------- Actores / capas
   subgraph cluster_usuario {
     label="Usuario";
     fontcolor="#9aa0ff";
@@ -117,7 +117,7 @@ digraph "LogicDetective" {
   router_api -> panel
        [label="11 · respuesta mostrada en el chat\ny actualiza el expediente"];
 
-  // ---------------------------------------------------- Flujo de acusación
+  // ----------------------------------------------------- Flujo de acusación
   panel -> router_api [label="Acusar (POST /api/.../acusar)"];
   router_api -> serv_inv [label="verificar estado"];
   serv_inv -> engine     [label="comparar con responsable/2"];
@@ -126,7 +126,7 @@ digraph "LogicDetective" {
   serv_inv -> sqlite [label="cerrar sesión"];
   serv_inv -> router_api;
 
-  // ------------------------------------------------------------- Admin flow
+  // ---------------------------------------------------------------- Admin flow
   admin -> admin_ui;
   admin_ui -> router_admin [label="1 · sesión + operación"];
   router_admin -> serv_admin [label="2 · operación"];
@@ -136,12 +136,12 @@ digraph "LogicDetective" {
   serv_admin -> casos [label="guardar/eliminar archivo .pl"];
   serv_admin -> sqlite [label="respaldo automático"];
 
-  // ------------------------------------------------------------ Infraestructura
+  // -------------------------------------------------- Infraestructura
   ci -> instancia [label="package → pull (commit anclado)"];
   instancia -> router_api [label="proceso en contenedor"];
   instancia -> sqlite [label="volumen persistente"];
 
-  // -------------------------------------------------------------- Pie
+  // ------------------------------------------------------------------ Pie
   { rank=sink; leyenda [shape=none, fontsize=9,
     label="Claves de lectura:\n1..11 = recorrido de una acción del detective\n↔ = única frontera Python/Prolog\nAdmin = ejecución de código en el servidor (proteger con credenciales)"]; }
 }

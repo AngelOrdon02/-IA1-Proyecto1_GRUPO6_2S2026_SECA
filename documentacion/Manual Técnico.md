@@ -149,15 +149,16 @@ Toda consulta pasa por `consulta_json/3` (`api_json.pl`), que serializa cada
 solución a un diccionario JSON. Esto hace que el cambio de backend sea invisible
 para el resto de la aplicación.
 
-> **Concurrencia:** PySwip embebe un único intérprete, así que todas las
-> consultas se serializan con un lock global y el servidor corre con **un solo
-> worker** de Uvicorn (fijado en el `CMD` del `Dockerfile`).
+> **Un solo intérprete en juego:** PySwip embebe un único intérprete de
+> Prolog, así que las consultas no pueden correr en paralelo. Para que todo se
+> comporte bien, se serializan con un lock global y el servidor se levanta con
+> **un solo worker** de Uvicorn (fijado en el `CMD` del `Dockerfile`).
 
-> **Trampa documentada:** el nombre del repositorio contiene corchetes, que son
-> metacaracteres de glob para SWI-Prolog. Por eso nunca se le pasa la ruta
-> absoluta de la KB: se usa el directorio de trabajo (`working_directory/2`) y
-> se consulta por nombre relativo, verificando tras el `consult` que
-> `consulta_json/3` exista.
+> **Un detalle sutil con las rutas:** el nombre del repositorio incluye
+> corchetes, y para SWI-Prolog esos corchetes son comodines de búsqueda. Por
+> eso nunca se le pasa la ruta absoluta de la KB: el motor cambia al directorio
+> de trabajo (`working_directory/2`), consulta el archivo por su nombre relativo
+> y, tras el `consult`, verifica que `consulta_json/3` exista.
 
 ---
 

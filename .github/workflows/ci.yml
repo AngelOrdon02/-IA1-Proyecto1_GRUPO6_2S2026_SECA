@@ -15,16 +15,17 @@
 # trabajo posterior tendria que reconstruirla —y podria salir distinta— o
 # pasearla como artefacto de cientos de megas.
 #
-# Publicar y desplegar solo ocurren al empujar a main; cualquier otra rama y
-# cualquier pull request se quedan en la verificacion.
+# El pipeline solo corre al empujar a main o develop; publicar y desplegar
+# solo ocurren al empujar a main. develop se queda en la verificacion.
 # =============================================================================
 
 name: CI/CD
 
+# Solo pushes a main y develop: las ramas feature/* y los pull requests no
+# disparan el pipeline para no consumir minutos de GitHub Actions. Cualquier
+# rama puede lanzarse a mano con workflow_dispatch si hace falta.
 on:
   push:
-    branches: [main, develop, "feature/**", "feat/**"]
-  pull_request:
     branches: [main, develop]
   workflow_dispatch:
 

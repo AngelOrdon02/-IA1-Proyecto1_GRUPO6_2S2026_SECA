@@ -54,6 +54,10 @@ COPY app/    ./app/
 COPY prolog/ ./prolog/
 COPY tests/  ./tests/
 
+# Los JSON/CSV de ejemplo del panel de administracion forman parte de la
+# aplicacion (el endpoint /api/admin/ejemplos los lista desde datos/ejemplos).
+COPY datos/ejemplos/ ./datos/ejemplos/
+
 # --- Frontend compilado -----------------------------------------------------
 COPY --from=frontend-builder /build/dist ./frontend/dist
 

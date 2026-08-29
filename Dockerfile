@@ -54,6 +54,11 @@ COPY app/    ./app/
 COPY prolog/ ./prolog/
 COPY tests/  ./tests/
 
+# Los ejemplos del panel de administracion se sirven desde /app/ejemplos (via
+# LD_EJEMPLOS) y no desde /app/datos: el volumen de datos que monta
+# docker-compose taparia cualquier cosa copiada bajo /app/datos.
+COPY datos/ejemplos/ ./ejemplos/
+
 # --- Frontend compilado -----------------------------------------------------
 COPY --from=frontend-builder /build/dist ./frontend/dist
 

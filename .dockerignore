@@ -40,9 +40,12 @@ credenciales*.json
 service-account*.json
 
 # --- Datos de ejecucion ------------------------------------------------------
-# La base de datos vive en un volumen, no en la imagen.
+# La base de datos vive en un volumen, no en la imagen. Los ejemplos del panel
+# de administracion si son parte de la aplicacion: el Dockerfile los copia a
+# /app/ejemplos, fuera del alcance del volumen.
 datos/
 !datos/.gitkeep
+!datos/ejemplos/
 
 # --- Documentacion y notas ---------------------------------------------------
 docs/
